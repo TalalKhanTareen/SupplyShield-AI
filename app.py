@@ -396,6 +396,89 @@ st.markdown(
         .hero h1 { font-size: 1.9rem !important; }
     }
 
+    
+    /* Readability pass: enforce strong contrast for all common Streamlit text */
+    html, body, .stApp, [data-testid="stAppViewContainer"],
+    [data-testid="stMain"], [data-testid="stMainBlockContainer"],
+    [data-testid="stMarkdownContainer"], [data-testid="stMarkdownContainer"] p,
+    [data-testid="stMarkdownContainer"] li, [data-testid="stMarkdownContainer"] span,
+    [data-testid="stText"], [data-testid="stCaptionContainer"],
+    [data-testid="stWidgetLabel"], [data-testid="stWidgetLabel"] p,
+    label, legend, small, .stCaption, .stMarkdown {
+        color: #1f2937 !important;
+    }
+    h1, h2, h3, h4, h5, h6,
+    [data-testid="stMarkdownContainer"] h1,
+    [data-testid="stMarkdownContainer"] h2,
+    [data-testid="stMarkdownContainer"] h3,
+    [data-testid="stMarkdownContainer"] h4 {
+        color: #14532d !important;
+    }
+    [data-testid="stCaptionContainer"], .stCaption,
+    [data-testid="stWidgetHelp"], [data-testid="stTooltipContent"] {
+        color: #475569 !important;
+    }
+    [data-testid="stMetricLabel"], [data-testid="stMetricLabel"] *,
+    [data-testid="stMetricValue"], [data-testid="stMetricValue"] *,
+    [data-testid="stMetricDelta"], [data-testid="stMetricDelta"] * {
+        color: #1f2937 !important;
+        opacity: 1 !important;
+    }
+    [data-testid="stSidebar"], [data-testid="stSidebar"] * {
+        color: #1f2937;
+    }
+    [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2,
+    [data-testid="stSidebar"] h3, [data-testid="stSidebar"] h4 {
+        color: #14532d !important;
+    }
+    input, textarea, [data-baseweb="select"] input,
+    [data-baseweb="select"] div, [data-testid="stNumberInput"] input {
+        color: #1f2937 !important;
+        -webkit-text-fill-color: #1f2937 !important;
+    }
+    input::placeholder, textarea::placeholder {
+        color: #5b6770 !important;
+        -webkit-text-fill-color: #5b6770 !important;
+        opacity: 1 !important;
+    }
+    [data-testid="stFileUploaderDropzone"] *,
+    [data-testid="stFileUploaderDropzoneInstructions"] {
+        color: #1f2937 !important;
+    }
+    [data-testid="stBaseButton-primary"], [data-testid="stBaseButton-primary"] *,
+    button[kind="primary"], button[kind="primary"] * {
+        color: #ffffff !important;
+    }
+    [data-testid="stBaseButton-secondary"], [data-testid="stBaseButton-secondary"] *,
+    button[kind="secondary"], button[kind="secondary"] * {
+        color: #1f7a4d !important;
+    }
+    [data-testid="stDataFrame"], [data-testid="stDataFrame"] *,
+    [data-testid="stTable"], [data-testid="stTable"] * {
+        color: #1f2937 !important;
+    }
+    [data-testid="stAlert"] p, [data-testid="stAlert"] span {
+        color: #1f2937 !important;
+    }
+    .hero .eyebrow { color: #fbf3e8 !important; }
+    .hero h1, .hero p, .hero .pill, .hero .feature-chip {
+        color: #ffffff !important;
+    }
+    .hero p { color: #f4fff6 !important; }
+    .hero .pill, .hero .feature-chip {
+        background: rgba(20,83,45,.34) !important;
+        color: #ffffff !important;
+        border-color: rgba(255,255,255,.65) !important;
+    }
+    .card .num, .section-kicker, .small-note a { color: #a06f35 !important; }
+    .card h4, .verdict .headline, .grade-copy strong { color: #14532d !important; }
+    .card p, .verdict .detail, .grade-copy p, .small-note { color: #475569 !important; }
+    button[data-baseweb="tab"] { color: #334155 !important; opacity: 1 !important; }
+    button[data-baseweb="tab"][aria-selected="true"] { color: #14532d !important; }
+    [data-testid="stExpander"] summary, [data-testid="stExpander"] summary * {
+        color: #1f2937 !important;
+    }
+
     </style>
     """,
     unsafe_allow_html=True,
