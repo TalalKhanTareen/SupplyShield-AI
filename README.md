@@ -88,7 +88,7 @@ pip install -r requirements-dev.txt
 python -m pytest -q
 ```
 
-The tests cover dependency parsing, risk scoring and prioritisation, remediation suggestions, and related helper logic. GitHub Actions runs the automated test suite on pushes and pull requests.
+The offline tests cover dependency parsing, mocked OSV responses, threat-intelligence enrichment, risk scoring and prioritisation, remediation suggestions, and JSON report generation. GitHub Actions runs the automated test suite on pushes and pull requests.
 
 ## Repository structure
 
