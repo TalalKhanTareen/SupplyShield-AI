@@ -109,14 +109,23 @@ The offline tests cover dependency parsing, mocked OSV responses, threat-intelli
 │   └── vulnerability_checker.py
 ├── tests/
 │   ├── test_dependency_parser.py
+│   ├── test_enrichment.py
 │   ├── test_remediation.py
-│   └── test_risk_engine.py
+│   ├── test_report_generator.py
+│   ├── test_risk_engine.py
+│   └── test_vulnerability_checker.py
 ├── .github/
 │   └── workflows/
 │       └── tests.yml
 ├── .streamlit/
 │   └── config.toml
+├── docs/
+│   ├── DEMO_SCRIPT.md
+│   └── PROJECT_SUBMISSION_CHECKLIST.md
+├── CONTRIBUTING.md
+├── SECURITY.md
 ├── requirements.txt
+├── requirements-dev.txt
 └── README.md
 ```
 
