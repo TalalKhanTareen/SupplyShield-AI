@@ -31,3 +31,38 @@ def get_risk_level(score):
         return "Low"
 
     return "No known findings"
+
+
+PRIORITY_ORDER = {"Urgent": 0, "Elevated": 1, "Standard": 2}
+SEVERITY_ORDER = {"Critical": 0, "High": 1, "Medium": 2, "Low": 3, "Unknown": 4}
+
+
+def get_priority(finding):
+    """Remediation priority using real-world exploit intelligence.
+
+    Urgent   - listed in CISA KEV (exploited in the wild) or EPSS >= 50%
+    Elevated - EPSS >= 10%
+    Standard - everything else
+    """
+    if finding.get("known_exploited"):
+        return "Urgent"
+
+    epss = finding.get("epss")
+    if epss is not None:
+        if epss >= 0.5:
+            return "Urgent"
+        if epss >= 0.1:
+            return "Elevated"
+
+    return "Standard"
+
+
+def sort_findings(findings):
+    """Order findings by remediation priority, then severity."""
+    return sorted(
+        findings,
+        key=lambda f: (
+            PRIORITY_ORDER[get_priority(f)],
+            SEVERITY_ORDER.get(str(f.get("severity", "Unknown")).title(), 4),
+        ),
+    )

@@ -10,8 +10,21 @@ SupplyShield AI is a Streamlit-based software supply-chain security prototype. I
 - Extract severity and fixed-version information where supplied by OSV
 - Calculate a cumulative risk score from returned findings
 - View findings, dependencies, and audit issues in separate dashboard tabs
+- Prioritise fixes as Urgent / Elevated / Standard using EPSS and CISA KEV
+- Flag outdated and yanked package versions via PyPI
 - Export a JSON security report
 - Run automated risk-engine tests
+
+## Free data sources (no API keys)
+
+| Source | Used for |
+| --- | --- |
+| [OSV.dev](https://osv.dev) | Known vulnerabilities, severity, fixed versions |
+| [PyPI JSON API](https://pypi.org) | Latest release and yanked-release detection |
+| [FIRST EPSS](https://www.first.org/epss/) | Probability a CVE will be exploited |
+| [CISA KEV](https://www.cisa.gov/known-exploited-vulnerabilities-catalog) | CVEs confirmed exploited in the wild |
+
+Enrichment can be switched off from the sidebar. If an enrichment source is unreachable, the scan still completes and shows a warning.
 
 ## Technology
 
