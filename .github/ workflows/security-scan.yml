@@ -1,1 +1,31 @@
+name: SupplyShield Security Checks
 
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt pytest
+
+      - name: Run risk engine tests
+        run: pytest -q
+
+      - name: Compile Python files
+        run: python -m compileall -q app.py scanner tests
