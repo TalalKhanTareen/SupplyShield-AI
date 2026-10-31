@@ -6,18 +6,34 @@ def test_empty_findings():
 
 
 def test_critical_finding():
-    findings = [{"severity": "Critical"}]
-    assert calculate_risk(findings) == 100
+    assert calculate_risk([{"severity": "Critical"}]) == 100
 
 
 def test_low_finding():
-    findings = [{"severity": "Low"}]
-    assert calculate_risk(findings) == 10
+    assert calculate_risk([{"severity": "Low"}]) == 10
+
+
+def test_repeated_findings_are_counted():
+    assert calculate_risk([
+        {"severity": "Low"},
+        {"severity": "Low"},
+        {"severity": "Medium"}
+    ]) == 60
+
+
+def test_score_is_capped():
+    assert calculate_risk([
+        {"severity": "Critical"},
+        {"severity": "High"}
+    ]) == 100
 
 
 def test_unknown_severity():
-    findings = [{"severity": "Unknown"}]
-    assert calculate_risk(findings) == 0
+    assert calculate_risk([{"severity": "Unknown"}]) == 0
+
+
+def test_case_insensitive_severity():
+    assert calculate_risk([{"severity": "high"}]) == 70
 
 
 def test_risk_level():
