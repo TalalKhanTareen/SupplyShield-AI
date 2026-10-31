@@ -8,27 +8,19 @@ SEVERITY_WEIGHTS = {
 
 
 def calculate_risk(findings):
-    if not findings:
-        return 0
-
-    weights = [
+    total = sum(
         SEVERITY_WEIGHTS.get(
-            finding.get("severity", "Unknown"),
+            str(finding.get("severity", "Unknown")).title(),
             0
         )
         for finding in findings
-    ]
-
-    total = max(weights)
-
-    for weight in weights:
-        if weight != total:
-            total += weight
-
+    )
     return min(total * 10, 100)
 
 
 def get_risk_level(score):
+    score = max(0, min(int(score), 100))
+
     if score >= 80:
         return "Critical"
     if score >= 60:
