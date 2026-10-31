@@ -1,61 +1,53 @@
 # SupplyShield AI
 
-SupplyShield AI is an automated software supply chain security
-prototype that analyzes Python dependencies for known vulnerabilities.
+SupplyShield AI is a Streamlit-based software supply-chain security prototype. It audits pinned Python dependencies against the OSV vulnerability database, classifies findings, calculates a cumulative risk score, and exports a JSON audit report.
 
 ## Features
 
-- Python requirements.txt parsing
-- Known vulnerability lookup through the OSV API
-- Dependency risk scoring
-- Security findings dashboard
-- JSON report generation
-- Dependency verification error reporting
+- Upload or paste a Python `requirements.txt` manifest
+- Parse exact package versions and flag unsupported manifest entries
+- Query OSV for known vulnerabilities
+- Extract severity and fixed-version information where supplied by OSV
+- Calculate a cumulative risk score from returned findings
+- View findings, dependencies, and audit issues in separate dashboard tabs
+- Export a JSON security report
+- Run automated risk-engine tests
 
-## Technology Stack
+## Technology
 
-- Python
-- Streamlit
-- Requests
-- Packaging
-- OSV API
-- GitHub
+Python, Streamlit, Pandas, Plotly, Requests, Packaging, CVSS, and the OSV API.
 
-## Project Structure
+## Run locally on Windows
 
-- app.py: Main dashboard
-- scanner/dependency_parser.py: Dependency parsing
-- scanner/vulnerability_checker.py: Vulnerability lookup
-- scanner/risk_engine.py: Risk scoring
-- scanner/report_generator.py: JSON reports
-- tests/test_risk_engine.py: Risk engine tests
+Open PowerShell in the project folder.
 
-## Run Locally
+```powershell
+py -3.11 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+streamlit run app.py
+```
 
-Install the dependencies:
+The dashboard opens at `http://localhost:8501`.
 
-    pip install -r requirements.txt
+If PowerShell blocks virtual-environment activation, run this once in the same terminal:
 
-Start the application:
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+.\.venv\Scripts\Activate.ps1
+```
 
-    streamlit run app.py
+## Run tests
 
-Upload a Python requirements.txt file and start the scan.
+```powershell
+python -m pytest -q
+```
 
-## Limitations
+## Demo
 
-The prototype checks for known vulnerabilities in supported
-package versions. It does not prove that a package is safe,
-detect every malicious package, or replace a complete security audit.
+The included `data/demo_requirements.txt` is preloaded in the dashboard. Press **Run Security Audit** to test the workflow. Internet access is required because vulnerability lookups are sent to OSV.
 
-Network failures and unsupported manifest entries must be reviewed
-before considering a scan complete.
+## Important limitations
 
-## Future Improvements
-
-- Fixed-version remediation recommendations
-- More package ecosystems
-- GitHub Actions integration
-- AI-assisted vulnerability explanations
-- Software Bill of Materials generation
-- Pull request security reporting
+This prototype identifies known vulnerabilities returned by OSV for the package versions queried. It does not prove that a package is safe, detect every malicious package, analyze every package ecosystem, or replace a professional security audit. A scan with verification or parsing errors is incomplete and must not be treated as a clean bill of health.
