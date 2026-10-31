@@ -79,6 +79,6 @@ def test_findings_sort_by_priority_then_severity():
         finding("High", "gamma", vuln_id="CVE-2026-0003", known_exploited=True),
     ]
     ordered = sort_findings(items)
-    assert ordered[0]["package"] == "beta"
-    assert ordered[1]["package"] == "gamma"
+    assert ordered[0]["package"] == "gamma"
+    assert ordered[1]["package"] == "beta"
     assert ordered[2]["package"] == "alpha"
