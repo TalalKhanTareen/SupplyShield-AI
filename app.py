@@ -141,6 +141,26 @@ st.markdown(
 
     .small-note { color: #9a9484; font-size: .82rem; }
     .small-note a { color: var(--camel-light); }
+    /* Product polish: clear hierarchy, subtle glow, and accessible focus states */
+    .hero { position: relative; overflow: hidden; box-shadow: 0 18px 45px rgba(0,0,0,.18); }
+    .hero:after { content: " "; position: absolute; width: 220px; height: 220px; right: -75px; bottom: -110px;
+                  border: 1px solid rgba(210,174,126,.28); border-radius: 50%;
+                  box-shadow: 0 0 0 24px rgba(210,174,126,.04), 0 0 0 48px rgba(210,174,126,.03);
+                  pointer-events: none; }
+    .section-kicker { color: var(--camel-light); font-size: .74rem; font-weight: 800;
+                      letter-spacing: .14em; text-transform: uppercase; margin-bottom: .35rem; }
+    .grade-card { display:flex; align-items:center; gap:18px; padding:18px 20px; margin:.6rem 0 1rem;
+                  border:1px solid var(--border); border-radius:14px; background:linear-gradient(110deg,#1c2b23,#223329); }
+    .grade-letter { display:flex; align-items:center; justify-content:center; min-width:66px; height:66px;
+                    border-radius:15px; font-size:2rem; font-weight:900; border:1px solid currentColor;
+                    background:rgba(255,255,255,.025); }
+    .grade-copy strong { color:#f6f2e9; font-size:1.05rem; }
+    .grade-copy p { color:var(--muted); margin:.2rem 0 0; font-size:.9rem; }
+    .feature-strip { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+    .feature-chip { border:1px solid #3d5547; border-radius:9px; padding:7px 10px;
+                    background:rgba(28,43,35,.78); color:#d8d1c2; font-size:.82rem; }
+    button:focus-visible, input:focus-visible { outline:2px solid var(--camel-light) !important; outline-offset:2px; }
+    @media (max-width: 700px) { .hero { padding:24px 20px; } .hero h1 { font-size:1.9rem; } }
     </style>
     """,
     unsafe_allow_html=True,
@@ -238,6 +258,11 @@ st.markdown(
         <span class="pill">No API keys</span>
         <span class="pill">Free public data sources</span>
         <span class="pill">Exportable report</span>
+      </div>
+      <div class="feature-strip">
+        <span class="feature-chip">◈ Risk-based prioritisation</span>
+        <span class="feature-chip">↗ Upgrade recommendations</span>
+        <span class="feature-chip">✓ Audit-ready exports</span>
       </div>
     </div>
     """,
@@ -366,6 +391,15 @@ if scan_clicked:
             "completed": completed,
             "enriched": use_enrichment,
         }
+        history = st.session_state.setdefault("scan_history", [])
+        history.insert(0, {
+            "time": pd.Timestamp.now().strftime("%Y-%m-%d %H:%M"),
+            "packages": len(dependencies),
+            "findings": len(findings),
+            "risk": risk_score,
+            "status": "Complete" if completed else "Partial",
+        })
+        st.session_state["scan_history"] = history[:5]
         status.empty()
         progress.empty()
 
@@ -467,6 +501,28 @@ if "scan_results" in st.session_state:
         help="Findings in the CISA KEV catalog or with EPSS >= 50%.",
     )
 
+    # A simple, explainable posture grade based on this scan's risk score.
+    if not results["completed"]:
+        grade, grade_text, grade_color = "—", "Incomplete scan: resolve audit issues before interpreting this grade.", "#8a8f86"
+    elif risk_score >= 80:
+        grade, grade_text, grade_color = "F", "Critical exposure: address the highest-priority findings immediately.", "#c4574a"
+    elif risk_score >= 60:
+        grade, grade_text, grade_color = "D", "High exposure: prioritise upgrades and validate the fixes with tests.", "#d08a4a"
+    elif risk_score >= 30:
+        grade, grade_text, grade_color = "C", "Moderate exposure: review recommended upgrades and reduce residual risk.", "#d4b45f"
+    elif risk_score > 0:
+        grade, grade_text, grade_color = "B", "Lower observed exposure: resolve remaining findings and keep dependencies current.", "#8aa6a3"
+    else:
+        grade, grade_text, grade_color = "A", "No known findings returned for the dependencies checked.", "#6b9a78"
+
+    st.markdown(
+        f'<div class="grade-card"><div class="grade-letter" style="color:{grade_color}">{grade}</div>'
+        f'<div class="grade-copy"><div class="section-kicker">Security posture grade</div>'
+        f'<strong>{grade_text}</strong><p>This grade reflects the scan result only; it is not a certification '
+        'and does not prove the application is secure.</p></div></div>',
+        unsafe_allow_html=True,
+    )
+
     if findings:
         gauge_col, chart_col = st.columns([1, 1.2])
 
@@ -515,8 +571,9 @@ if "scan_results" in st.session_state:
             st.plotly_chart(fig, width="stretch")
 
         st.caption(
-            "Score = sum of severity weights x 10, capped at 100. "
-            "Findings are sorted by remediation priority, then severity."
+            "Risk score combines the highest severity with a small increase for each additional "
+            "distinct finding. Related OSV advisories are merged when their identifiers overlap. "
+            "Findings are sorted by exploit priority, then severity."
         )
 
     for message in warnings:
@@ -586,6 +643,12 @@ if "scan_results" in st.session_state:
                 }
                 if enriched:
                     epss = item.get("epss")
+                    if epss is not None:
+                        try:
+                            epss = float(epss)
+                            epss = epss / 100 if epss > 1 else epss
+                        except (TypeError, ValueError):
+                            epss = None
                     row["Exploit probability (EPSS)"] = epss * 100 if epss is not None else None
                     row["CISA KEV"] = "Yes" if item.get("known_exploited") else "No"
                 row["Summary"] = item["summary"]
@@ -667,6 +730,18 @@ if "scan_results" in st.session_state:
         mime="application/json",
         type="primary",
     )
+
+if st.session_state.get("scan_history"):
+    with st.expander("Recent scans in this session", expanded=False):
+        st.caption("History is kept only in this browser session and is cleared when the session resets.")
+        st.dataframe(
+            pd.DataFrame(st.session_state["scan_history"]).rename(columns={
+                "time": "Time", "packages": "Packages", "findings": "Findings",
+                "risk": "Risk score", "status": "Status",
+            }),
+            width="stretch",
+            hide_index=True,
+        )
 
 st.divider()
 st.markdown(
