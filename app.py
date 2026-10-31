@@ -89,7 +89,7 @@ manifest = (
 
 scan_col, hint_col = st.columns([1, 3])
 with scan_col:
-    scan_clicked = st.button("🚀 Run Security Audit", type="primary", use_container_width=True)
+    scan_clicked = st.button("🚀 Run Security Audit", type="primary", width="stretch")
 with hint_col:
     st.caption("The included demo manifest is preloaded. You can scan it immediately.")
 
@@ -191,7 +191,7 @@ if "scan_results" in st.session_state:
                 showlegend=False,
                 margin=dict(l=10, r=10, t=45, b=10)
             )
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
         with summary_col:
             st.subheader("Risk interpretation")
             st.write(f"**{get_risk_level(risk_score)} risk**")
@@ -221,7 +221,7 @@ if "scan_results" in st.session_state:
                     "Fixed Version": item.get("fixed_version") or "Not supplied",
                     "Summary": item["summary"]
                 })
-            st.dataframe(pd.DataFrame(display_findings), use_container_width=True, hide_index=True)
+            st.dataframe(pd.DataFrame(display_findings), width="stretch", hide_index=True)
             for item in findings:
                 with st.expander(f"{item['vulnerability_id']} — {item['package']} ({item['severity']})"):
                     st.write(item["summary"])
@@ -245,7 +245,7 @@ if "scan_results" in st.session_state:
                     }
                     for item in dependencies
                 ]),
-                use_container_width=True,
+                width="stretch",
                 hide_index=True
             )
         else:
@@ -254,10 +254,10 @@ if "scan_results" in st.session_state:
     with tab_issues:
         if scan_errors:
             st.subheader("Dependencies not verified")
-            st.dataframe(pd.DataFrame(scan_errors), use_container_width=True, hide_index=True)
+            st.dataframe(pd.DataFrame(scan_errors), width="stretch", hide_index=True)
         if parser_errors:
             st.subheader("Manifest parsing issues")
-            st.dataframe(pd.DataFrame(parser_errors), use_container_width=True, hide_index=True)
+            st.dataframe(pd.DataFrame(parser_errors), width="stretch", hide_index=True)
         if not scan_errors and not parser_errors:
             st.success("No scan or manifest parsing errors were reported.")
 
