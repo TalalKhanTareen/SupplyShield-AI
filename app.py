@@ -22,23 +22,14 @@ BASE_DIR = Path(__file__).resolve().parent
 DEMO_FILE = BASE_DIR / "data" / "demo_requirements.txt"
 REPO_URL = "https://github.com/TalalKhanTareen/SupplyShield-AI"
 
-# Matte palette: forest green + camel, with muted (non-neon) status colours
-SEVERITY_COLORS = {
-    "Critical": "#c4574a",  # brick
-    "High": "#d08a4a",      # burnt camel
-    "Medium": "#d4b45f",    # mustard
-    "Low": "#8aa6a3",       # muted sage-teal
-    "Unknown": "#8a8f86",   # stone
-}
-PRIORITY_COLORS = {"Urgent": "#c4574a", "Elevated": "#d08a4a", "Standard": "#a9a590"}
-RISK_COLORS = {
-    "Critical": "#c4574a",
-    "High": "#d08a4a",
-    "Medium": "#d4b45f",
-    "Low": "#8aa6a3",
-    "No known findings": "#6b9a78",  # matte green
-}
-
+SEVERITY_COLORS = {"Critical":"#dc2626","High":"#ea580c","Medium":"#d99a1e","Low":"#0284c7","Unknown":"#64748b"}
+SEVERITY_TEXT_COLORS = {"Critical":"#b91c1c","High":"#c2410c","Medium":"#946200","Low":"#0369a1","Unknown":"#475569"}
+SEVERITY_BACKGROUND_COLORS = {"Critical":"#fee2e2","High":"#ffedd5","Medium":"#fef3c7","Low":"#e0f2fe","Unknown":"#f1f5f9"}
+PRIORITY_COLORS = {"Urgent":"#dc2626","Elevated":"#ea580c","Standard":"#1f7a4d"}
+PRIORITY_TEXT_COLORS = {"Urgent":"#b91c1c","Elevated":"#c2410c","Standard":"#166534"}
+PRIORITY_BACKGROUND_COLORS = {"Urgent":"#fee2e2","Elevated":"#ffedd5","Standard":"#dcfce7"}
+RISK_COLORS = {"Critical":"#dc2626","High":"#ea580c","Medium":"#d99a1e","Low":"#0284c7","No known findings":"#1f9d63"}
+RISK_TEXT_COLORS = {"Critical":"#b91c1c","High":"#c2410c","Medium":"#946200","Low":"#0369a1","No known findings":"#166534"}
 st.set_page_config(
     page_title="SupplyShield AI | Dependency Security Audit",
     page_icon="🛡️",
@@ -46,443 +37,13 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-st.markdown(
-    """
-    <style>
-    :root {
-        --bg: #f4f7f2; --surface: #ffffff; --surface-2: #edf3ec;
-        --border: #d4dfd3; --green: #39754a; --green-dark: #285b38;
-        --camel: #a86f2c; --camel-light: #80501d;
-        --text: #1d2a20; --muted: #5b6a5e;
-    }
-    #MainMenu, footer { visibility: hidden; }
-    .block-container { padding-top: 1.6rem; max-width: 1200px; }
+STYLE_FILE = BASE_DIR / "assets" / "supplyshield.css"
+if STYLE_FILE.exists():
+    st.markdown(
+        f"<style>{STYLE_FILE.read_text(encoding='utf-8')}</style>",
+        unsafe_allow_html=True,
+    )
 
-    /* ---------- hero ---------- */
-    .hero {
-        background: radial-gradient(circle at 88% 0%, #e0efdf 0%, #edf4e9 48%, #fbf8f0 100%);
-        border: 1px solid var(--border); border-radius: 18px;
-        border-bottom: 3px solid var(--camel);
-        padding: 34px 36px; margin-bottom: 1.2rem;
-    }
-    .hero .eyebrow { color: var(--camel); font-weight: 700; letter-spacing: .12em;
-                     font-size: .78rem; text-transform: uppercase; }
-    .hero h1 { margin: 6px 0 8px 0; font-size: 2.5rem; font-weight: 800; color: #1d3424; line-height: 1.1; }
-    .hero p  { margin: 0; color: #4d6252; font-size: 1.05rem; max-width: 720px; }
-    .hero code { background: #e2ece0; color: #714719; padding: 1px 6px; border-radius: 5px; }
-    .hero .chips { margin-top: 18px; }
-
-    /* ---------- pills ---------- */
-    .pill { display: inline-block; padding: 3px 11px; margin: 0 6px 6px 0;
-            border-radius: 999px; font-size: .76rem; font-weight: 600;
-            border: 1px solid #d1ddcf; color: #425348; background: #edf4eb;
-            transition: all .2s ease; }
-    .hero .pill:hover { border-color: var(--camel); color: var(--camel-light); transform: translateY(-1px); }
-    .pill.on  { border-color: var(--green-dark); color: #9fcbab; background: #1d3326; }
-    .pill.off { border-color: #4b524a; color: #8a8f86; }
-
-    /* ---------- cards / metrics with hover ---------- */
-    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
-            padding: 20px 22px; height: 100%;
-            transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease; }
-    .card:hover { transform: translateY(-4px); border-color: var(--camel);
-                  box-shadow: 0 10px 24px rgba(0,0,0,.28); }
-    .card .num { color: var(--camel); font-weight: 800; font-size: .85rem; letter-spacing: .08em; }
-    .card h4 { margin: 4px 0 6px 0; color: #203728; font-size: 1.08rem; }
-    .card p  { margin: 0; color: var(--muted); font-size: .93rem; line-height: 1.5; }
-
-    div[data-testid="stMetric"] { background: var(--surface); border: 1px solid var(--border);
-                                  padding: 14px 18px; border-radius: 12px;
-                                  transition: transform .2s ease, border-color .2s ease; }
-    div[data-testid="stMetric"]:hover { transform: translateY(-2px); border-color: var(--green); }
-    div[data-testid="stMetricLabel"] { color: var(--muted); }
-
-    /* ---------- verdict banner ---------- */
-    .verdict { border-radius: 14px; padding: 18px 22px; margin: .4rem 0 1rem 0;
-               border: 1px solid var(--border); border-left-width: 6px; background: var(--surface); }
-    .verdict .label { font-size: .78rem; font-weight: 700; letter-spacing: .1em;
-                      text-transform: uppercase; opacity: .95; }
-    .verdict .headline { font-size: 1.35rem; font-weight: 700; color: #203728; margin: 2px 0 4px 0; }
-    .verdict .detail { color: #4d6252; font-size: .97rem; }
-
-    /* ---------- buttons ---------- */
-    [data-testid="stBaseButton-primary"] {
-        background: var(--green-dark); border: 1px solid var(--green); color: #f6f2e9;
-        font-weight: 700; border-radius: 10px;
-        transition: background .2s ease, transform .15s ease, box-shadow .2s ease;
-    }
-    [data-testid="stBaseButton-primary"]:hover {
-        background: var(--camel); border-color: var(--camel-light); color: #1a1a14;
-        transform: translateY(-1px); box-shadow: 0 6px 16px rgba(193,154,107,.28);
-    }
-    [data-testid="stBaseButton-secondary"] {
-        border: 1px solid var(--camel); color: var(--camel-light); border-radius: 10px;
-        background: transparent; transition: background .2s ease, transform .15s ease;
-    }
-    [data-testid="stBaseButton-secondary"]:hover {
-        background: rgba(193,154,107,.14); border-color: var(--camel-light);
-        color: var(--camel-light); transform: translateY(-1px);
-    }
-
-    /* ---------- tabs ---------- */
-    button[data-baseweb="tab"] { font-weight: 600; transition: color .2s ease; }
-    button[data-baseweb="tab"]:hover { color: var(--camel-light); }
-    button[data-baseweb="tab"][aria-selected="true"] { color: var(--camel-light); }
-    div[data-baseweb="tab-highlight"] { background-color: var(--camel); }
-
-    /* ---------- expanders & inputs ---------- */
-    details { border: 1px solid var(--border) !important; border-radius: 10px !important;
-              transition: border-color .2s ease; }
-    details:hover { border-color: var(--green) !important; }
-    [data-testid="stFileUploaderDropzone"] { border: 1.5px dashed var(--camel);
-                                             background: var(--surface); border-radius: 12px;
-                                             transition: background .2s ease; }
-    [data-testid="stFileUploaderDropzone"]:hover { background: var(--surface-2); }
-
-    .small-note { color: #9a9484; font-size: .82rem; }
-    .small-note a { color: var(--camel-light); }
-    /* Product polish: clear hierarchy, subtle glow, and accessible focus states */
-    .hero { position: relative; overflow: hidden; box-shadow: 0 18px 45px rgba(0,0,0,.18); }
-    .hero:after { content: " "; position: absolute; width: 220px; height: 220px; right: -75px; bottom: -110px;
-                  border: 1px solid rgba(210,174,126,.28); border-radius: 50%;
-                  box-shadow: 0 0 0 24px rgba(210,174,126,.04), 0 0 0 48px rgba(210,174,126,.03);
-                  pointer-events: none; }
-    .section-kicker { color: var(--camel-light); font-size: .74rem; font-weight: 800;
-                      letter-spacing: .14em; text-transform: uppercase; margin-bottom: .35rem; }
-    .grade-card { display:flex; align-items:center; gap:18px; padding:18px 20px; margin:.6rem 0 1rem;
-                  border:1px solid var(--border); border-radius:14px; background:linear-gradient(110deg,#ffffff,#edf5eb); }
-    .grade-letter { display:flex; align-items:center; justify-content:center; min-width:66px; height:66px;
-                    border-radius:15px; font-size:2rem; font-weight:900; border:1px solid currentColor;
-                    background:rgba(255,255,255,.025); }
-    .grade-copy strong { color:#f6f2e9; font-size:1.05rem; }
-    .grade-copy p { color:var(--muted); margin:.2rem 0 0; font-size:.9rem; }
-    .feature-strip { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
-    .feature-chip { border:1px solid #3d5547; border-radius:9px; padding:7px 10px;
-                    background:rgba(255,255,255,.88); color:#344b39; font-size:.82rem; }
-    button:focus-visible, input:focus-visible { outline:2px solid var(--camel-light) !important; outline-offset:2px; }
-    @media (max-width: 700px) { .hero { padding:24px 20px; } .hero h1 { font-size:1.9rem; } }
-
-    /* High-contrast white theme */
-    html, body, [data-testid="stAppViewContainer"], [data-testid="stMain"],
-    [data-testid="stMainBlockContainer"] { background: #ffffff !important; color: #17251b !important; }
-    [data-testid="stHeader"] { background: rgba(255,255,255,.96) !important; }
-    [data-testid="stSidebar"], [data-testid="stSidebar"] > div {
-        background: #f3f7f2 !important; border-right: 1px solid #d7e1d5 !important;
-    }
-    .block-container { max-width: 1280px; padding-top: 2rem; padding-bottom: 3rem; }
-    .hero {
-        background: linear-gradient(115deg, #ffffff 0%, #f0f7ef 68%, #e2f0e2 100%) !important;
-        border: 1px solid #cbdacb !important; border-bottom: 4px solid #267442 !important;
-        box-shadow: 0 8px 28px rgba(28, 66, 37, .09) !important;
-    }
-    .hero .eyebrow, .section-kicker { color: #87531d !important; }
-    .hero h1, .card h4, .verdict .headline, .grade-copy strong { color: #172f20 !important; }
-    .hero p, .verdict .detail, .card p, .grade-copy p { color: #43564a !important; }
-    .hero code { background: #e6efe5 !important; color: #744817 !important; }
-    .pill, .feature-chip {
-        background: #ffffff !important; color: #304638 !important; border-color: #cbd9cb !important;
-    }
-    .pill.on { background: #e0f2e4 !important; color: #205d32 !important; border-color: #78ad83 !important; }
-    .pill.off { background: #f4f5f3 !important; color: #5c665e !important; border-color: #d8ded7 !important; }
-    .card, div[data-testid="stMetric"], .verdict, details,
-    [data-testid="stFileUploaderDropzone"] {
-        background: #ffffff !important; border-color: #d3ded2 !important;
-        box-shadow: 0 3px 12px rgba(27, 54, 32, .045);
-    }
-    .card:hover { border-color: #478557 !important; box-shadow: 0 9px 22px rgba(27, 76, 39, .12) !important; }
-    div[data-testid="stMetricLabel"], div[data-testid="stMetricValue"],
-    div[data-testid="stMetricDelta"] { color: #263c2c !important; }
-    [data-testid="stBaseButton-primary"] {
-        background: #246b39 !important; border-color: #1c5a2e !important; color: #ffffff !important;
-    }
-    [data-testid="stBaseButton-primary"]:hover { background: #174d29 !important; }
-    [data-testid="stBaseButton-secondary"] {
-        background: #ffffff !important; border-color: #8a642e !important; color: #704719 !important;
-    }
-    button[data-baseweb="tab"] { color: #4a5d4e !important; }
-    button[data-baseweb="tab"][aria-selected="true"] { color: #1e6634 !important; }
-    div[data-baseweb="tab-highlight"] { background-color: #267442 !important; }
-    .grade-card { background: linear-gradient(110deg,#ffffff,#f0f7ef) !important; border-color: #cbdacb !important; }
-    .grade-letter { background: #ffffff !important; }
-    .small-note { color: #59685d !important; }
-    .small-note a { color: #205f32 !important; }
-    [data-testid="stDataFrame"], [data-testid="stTable"] { border: 1px solid #d3ded2; border-radius: 10px; }
-    
-    /* SupplyShield AI design system — requested emerald + camel palette */
-    :root {
-        --page-bg: #ffffff;
-        --soft-tint: #f3f8f4;
-        --primary: #1f7a4d;
-        --forest: #14532d;
-        --mint: #2f9e6b;
-        --camel: #c08a4b;
-        --camel-dark: #a06f35;
-        --camel-tint: #fbf3e8;
-        --body-text: #1f2937;
-        --muted-text: #5b6770;
-        --sage-border: #dfe8e1;
-        --critical: #dc2626;
-        --high: #ea580c;
-        --medium: #d99a1e;
-        --low: #0284c7;
-        --all-clear: #1f9d63;
-    }
-    html, body, [data-testid="stAppViewContainer"], [data-testid="stMain"],
-    [data-testid="stMainBlockContainer"], .stApp {
-        background: var(--page-bg) !important;
-        color: var(--body-text) !important;
-    }
-    [data-testid="stHeader"] { background: rgba(255,255,255,.96) !important; }
-    [data-testid="stSidebar"], [data-testid="stSidebar"] > div {
-        background: var(--soft-tint) !important;
-        border-right: 1px solid var(--sage-border) !important;
-    }
-    .block-container { max-width: 1280px; padding-top: 2rem; padding-bottom: 3rem; }
-    h1, h2, h3, h4, h5, h6 { color: var(--forest) !important; }
-    p, li, label, [data-testid="stMarkdownContainer"] { color: var(--body-text); }
-    [data-testid="stCaptionContainer"], .small-note { color: var(--muted-text) !important; }
-
-    .hero {
-        background: linear-gradient(115deg, var(--forest) 0%, var(--primary) 58%, var(--mint) 100%) !important;
-        border: 1px solid var(--primary) !important;
-        border-bottom: 5px solid var(--camel) !important;
-        border-radius: 18px !important;
-        box-shadow: 0 10px 28px rgba(20,83,45,.16) !important;
-    }
-    .hero .eyebrow, .hero h1, .hero p, .hero .pill,
-    .hero .feature-chip { color: #ffffff !important; }
-    .hero .eyebrow { opacity: .92; }
-    .hero h1 { color: #ffffff !important; }
-    .hero p { color: #effaf1 !important; }
-    .hero code { background: rgba(255,255,255,.16) !important; color: #ffffff !important; }
-    .hero .pill, .hero .feature-chip {
-        background: rgba(255,255,255,.12) !important;
-        border-color: rgba(255,255,255,.38) !important;
-    }
-    .hero .pill:hover { border-color: var(--camel) !important; color: #fff4e5 !important; }
-
-    .card {
-        background: #ffffff !important;
-        border: 1px solid var(--sage-border) !important;
-        border-top: 4px solid var(--primary) !important;
-        border-radius: 14px !important;
-        box-shadow: 0 4px 14px rgba(31,122,77,.07) !important;
-        transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease !important;
-    }
-    .card:hover {
-        transform: translateY(-3px);
-        border-top-color: var(--camel) !important;
-        box-shadow: 0 10px 24px rgba(31,122,77,.13) !important;
-    }
-    .card .num { color: var(--camel-dark) !important; }
-    .card h4 { color: var(--forest) !important; }
-    .card p { color: var(--muted-text) !important; }
-
-    div[data-testid="stMetric"] {
-        background: #ffffff !important;
-        border: 1px solid var(--sage-border) !important;
-        border-left: 4px solid var(--primary) !important;
-        border-radius: 12px !important;
-        box-shadow: 0 3px 12px rgba(31,122,77,.05);
-        transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
-    }
-    div[data-testid="stMetric"]:hover {
-        transform: translateY(-2px);
-        border-left-color: var(--camel) !important;
-        box-shadow: 0 7px 18px rgba(31,122,77,.10);
-    }
-    div[data-testid="stMetricLabel"], div[data-testid="stMetricValue"],
-    div[data-testid="stMetricDelta"] { color: var(--body-text) !important; }
-
-    .verdict {
-        background: #ffffff !important;
-        border: 1px solid var(--sage-border) !important;
-        border-left: 6px solid var(--primary) !important;
-        border-radius: 14px !important;
-    }
-    .verdict .headline { color: var(--forest) !important; }
-    .verdict .detail { color: var(--muted-text) !important; }
-
-    [data-testid="stBaseButton-primary"], button[kind="primary"] {
-        background: var(--primary) !important;
-        color: #ffffff !important;
-        border: 1px solid var(--primary) !important;
-        border-radius: 10px !important;
-        font-weight: 700 !important;
-        transition: background .2s ease, transform .2s ease, box-shadow .2s ease !important;
-    }
-    [data-testid="stBaseButton-primary"]:hover, button[kind="primary"]:hover {
-        background: var(--camel) !important;
-        border-color: var(--camel-dark) !important;
-        color: #ffffff !important;
-        box-shadow: 0 5px 16px rgba(192,138,75,.25) !important;
-        transform: translateY(-1px);
-    }
-    [data-testid="stBaseButton-secondary"], button[kind="secondary"] {
-        background: #ffffff !important;
-        color: var(--primary) !important;
-        border: 1px solid var(--primary) !important;
-        border-radius: 10px !important;
-        transition: background .2s ease, transform .2s ease !important;
-    }
-    [data-testid="stBaseButton-secondary"]:hover, button[kind="secondary"]:hover {
-        background: var(--soft-tint) !important;
-        border-color: var(--mint) !important;
-        color: var(--forest) !important;
-        transform: translateY(-1px);
-    }
-
-    button[data-baseweb="tab"] {
-        color: var(--muted-text) !important;
-        font-weight: 650 !important;
-        transition: color .2s ease !important;
-    }
-    button[data-baseweb="tab"]:hover { color: var(--camel-dark) !important; }
-    button[data-baseweb="tab"][aria-selected="true"] { color: var(--forest) !important; }
-    div[data-baseweb="tab-highlight"] { background: var(--camel) !important; height: 3px !important; }
-
-    details {
-        background: #ffffff !important;
-        border: 1px solid var(--sage-border) !important;
-        border-radius: 11px !important;
-        transition: border-color .2s ease, box-shadow .2s ease !important;
-    }
-    details:hover {
-        border-color: var(--camel) !important;
-        box-shadow: 0 4px 14px rgba(31,122,77,.07) !important;
-    }
-    [data-testid="stFileUploaderDropzone"] {
-        background: var(--camel-tint) !important;
-        border: 1.5px dashed var(--camel) !important;
-        border-radius: 12px !important;
-        transition: background .2s ease, border-color .2s ease !important;
-    }
-    [data-testid="stFileUploaderDropzone"]:hover {
-        background: #f8ead8 !important;
-        border-color: var(--camel-dark) !important;
-    }
-
-    .pill, .feature-chip {
-        background: var(--soft-tint) !important;
-        color: var(--forest) !important;
-        border: 1px solid var(--sage-border) !important;
-    }
-    .pill.on { background: #e3f5e9 !important; color: var(--primary) !important; border-color: var(--mint) !important; }
-    .pill.off { background: #f4f5f4 !important; color: var(--muted-text) !important; border-color: var(--sage-border) !important; }
-    .section-kicker { color: var(--camel-dark) !important; }
-    .grade-card {
-        background: linear-gradient(110deg,#ffffff,var(--soft-tint)) !important;
-        border: 1px solid var(--sage-border) !important;
-        border-radius: 14px !important;
-    }
-    .grade-letter { background: #ffffff !important; }
-    .grade-copy strong { color: var(--forest) !important; }
-    .grade-copy p { color: var(--muted-text) !important; }
-    .small-note { color: var(--muted-text) !important; }
-    .small-note a { color: var(--primary) !important; }
-    [data-testid="stDataFrame"], [data-testid="stTable"] {
-        border: 1px solid var(--sage-border) !important;
-        border-radius: 10px !important;
-    }
-    input, textarea, [data-baseweb="select"] > div {
-        border-color: var(--sage-border) !important;
-    }
-    button:focus-visible, input:focus-visible, textarea:focus-visible {
-        outline: 2px solid var(--camel) !important;
-        outline-offset: 2px;
-    }
-    @media (max-width: 700px) {
-        .hero { padding: 24px 20px !important; }
-        .hero h1 { font-size: 1.9rem !important; }
-    }
-
-    
-    /* Readability pass: enforce strong contrast for all common Streamlit text */
-    html, body, .stApp, [data-testid="stAppViewContainer"],
-    [data-testid="stMain"], [data-testid="stMainBlockContainer"],
-    [data-testid="stMarkdownContainer"], [data-testid="stMarkdownContainer"] p,
-    [data-testid="stMarkdownContainer"] li, [data-testid="stMarkdownContainer"] span,
-    [data-testid="stText"], [data-testid="stCaptionContainer"],
-    [data-testid="stWidgetLabel"], [data-testid="stWidgetLabel"] p,
-    label, legend, small, .stCaption, .stMarkdown {
-        color: #1f2937 !important;
-    }
-    h1, h2, h3, h4, h5, h6,
-    [data-testid="stMarkdownContainer"] h1,
-    [data-testid="stMarkdownContainer"] h2,
-    [data-testid="stMarkdownContainer"] h3,
-    [data-testid="stMarkdownContainer"] h4 {
-        color: #14532d !important;
-    }
-    [data-testid="stCaptionContainer"], .stCaption,
-    [data-testid="stWidgetHelp"], [data-testid="stTooltipContent"] {
-        color: #475569 !important;
-    }
-    [data-testid="stMetricLabel"], [data-testid="stMetricLabel"] *,
-    [data-testid="stMetricValue"], [data-testid="stMetricValue"] *,
-    [data-testid="stMetricDelta"], [data-testid="stMetricDelta"] * {
-        color: #1f2937 !important;
-        opacity: 1 !important;
-    }
-    [data-testid="stSidebar"], [data-testid="stSidebar"] * {
-        color: #1f2937;
-    }
-    [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2,
-    [data-testid="stSidebar"] h3, [data-testid="stSidebar"] h4 {
-        color: #14532d !important;
-    }
-    input, textarea, [data-baseweb="select"] input,
-    [data-baseweb="select"] div, [data-testid="stNumberInput"] input {
-        color: #1f2937 !important;
-        -webkit-text-fill-color: #1f2937 !important;
-    }
-    input::placeholder, textarea::placeholder {
-        color: #5b6770 !important;
-        -webkit-text-fill-color: #5b6770 !important;
-        opacity: 1 !important;
-    }
-    [data-testid="stFileUploaderDropzone"] *,
-    [data-testid="stFileUploaderDropzoneInstructions"] {
-        color: #1f2937 !important;
-    }
-    [data-testid="stBaseButton-primary"], [data-testid="stBaseButton-primary"] *,
-    button[kind="primary"], button[kind="primary"] * {
-        color: #ffffff !important;
-    }
-    [data-testid="stBaseButton-secondary"], [data-testid="stBaseButton-secondary"] *,
-    button[kind="secondary"], button[kind="secondary"] * {
-        color: #1f7a4d !important;
-    }
-    [data-testid="stDataFrame"], [data-testid="stDataFrame"] *,
-    [data-testid="stTable"], [data-testid="stTable"] * {
-        color: #1f2937 !important;
-    }
-    [data-testid="stAlert"] p, [data-testid="stAlert"] span {
-        color: #1f2937 !important;
-    }
-    .hero .eyebrow { color: #fbf3e8 !important; }
-    .hero h1, .hero p, .hero .pill, .hero .feature-chip {
-        color: #ffffff !important;
-    }
-    .hero p { color: #f4fff6 !important; }
-    .hero .pill, .hero .feature-chip {
-        background: rgba(20,83,45,.34) !important;
-        color: #ffffff !important;
-        border-color: rgba(255,255,255,.65) !important;
-    }
-    .card .num, .section-kicker, .small-note a { color: #a06f35 !important; }
-    .card h4, .verdict .headline, .grade-copy strong { color: #14532d !important; }
-    .card p, .verdict .detail, .grade-copy p, .small-note { color: #475569 !important; }
-    button[data-baseweb="tab"] { color: #334155 !important; opacity: 1 !important; }
-    button[data-baseweb="tab"][aria-selected="true"] { color: #14532d !important; }
-    [data-testid="stExpander"] summary, [data-testid="stExpander"] summary * {
-        color: #1f2937 !important;
-    }
-
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
 
 
 # --------------------------------------------------------------------------- #
@@ -513,16 +74,24 @@ def cached_epss_lookup(cve_ids):
 
 
 def style_table(frame):
-    """Colour-code severity and priority cells."""
+    """Apply readable severity and priority badges in the findings table."""
     styled = frame.style
     if "Severity" in frame.columns:
         styled = styled.map(
-            lambda v: f"color: {SEVERITY_COLORS.get(v, '#f1ede4')}; font-weight: 700",
+            lambda value: (
+                f"color: {SEVERITY_TEXT_COLORS.get(value, '#475569')}; "
+                f"background-color: {SEVERITY_BACKGROUND_COLORS.get(value, '#f1f5f9')}; "
+                "font-weight: 700"
+            ),
             subset=["Severity"],
         )
     if "Priority" in frame.columns:
         styled = styled.map(
-            lambda v: f"color: {PRIORITY_COLORS.get(v, '#f1ede4')}; font-weight: 700",
+            lambda value: (
+                f"color: {PRIORITY_TEXT_COLORS.get(value, '#475569')}; "
+                f"background-color: {PRIORITY_BACKGROUND_COLORS.get(value, '#f1f5f9')}; "
+                "font-weight: 700"
+            ),
             subset=["Priority"],
         )
     return styled
@@ -761,7 +330,8 @@ if "scan_results" in st.session_state:
     risk_score = results["risk_score"]
     enriched = results.get("enriched", False)
     risk_level = get_risk_level(risk_score)
-    level_color = RISK_COLORS.get(risk_level, "#c19a6b")
+    level_color = RISK_COLORS.get(risk_level, "#1f7a4d")
+    level_text_color = RISK_TEXT_COLORS.get(risk_level, "#14532d")
 
     st.divider()
     st.markdown("#### Results")
@@ -788,15 +358,17 @@ if "scan_results" in st.session_state:
         detail = "All dependencies were checked and none matched a known vulnerability."
         label = "Looks good"
         level_color = RISK_COLORS["No known findings"]
+        level_text_color = RISK_TEXT_COLORS["No known findings"]
     else:
         headline = "Audit incomplete"
         detail = "Some dependencies could not be verified. Review the Audit issues tab before drawing conclusions."
         label = "Needs review"
         level_color = RISK_COLORS["Medium"]
+        level_text_color = RISK_TEXT_COLORS["Medium"]
 
     st.markdown(
         f'<div class="verdict" style="border-left-color:{level_color}">'
-        f'<div class="label" style="color:{level_color}">{label}</div>'
+        f'<div class="label" style="color:{level_text_color}">{label}</div>'
         f'<div class="headline">{headline}</div>'
         f'<div class="detail">{detail}</div></div>',
         unsafe_allow_html=True,
@@ -821,17 +393,17 @@ if "scan_results" in st.session_state:
 
     # A simple, explainable posture grade based on this scan's risk score.
     if not results["completed"]:
-        grade, grade_text, grade_color = "—", "Incomplete scan: resolve audit issues before interpreting this grade.", "#8a8f86"
+        grade, grade_text, grade_color = "—", "Incomplete scan: resolve audit issues before interpreting this grade.", "#64748b"
     elif risk_score >= 80:
-        grade, grade_text, grade_color = "F", "Critical exposure: address the highest-priority findings immediately.", "#c4574a"
+        grade, grade_text, grade_color = "F", "Critical exposure: address the highest-priority findings immediately.", "#b91c1c"
     elif risk_score >= 60:
-        grade, grade_text, grade_color = "D", "High exposure: prioritise upgrades and validate the fixes with tests.", "#d08a4a"
+        grade, grade_text, grade_color = "D", "High exposure: prioritise upgrades and validate the fixes with tests.", "#c2410c"
     elif risk_score >= 30:
-        grade, grade_text, grade_color = "C", "Moderate exposure: review recommended upgrades and reduce residual risk.", "#d4b45f"
+        grade, grade_text, grade_color = "C", "Moderate exposure: review recommended upgrades and reduce residual risk.", "#946200"
     elif risk_score > 0:
-        grade, grade_text, grade_color = "B", "Lower observed exposure: resolve remaining findings and keep dependencies current.", "#8aa6a3"
+        grade, grade_text, grade_color = "B", "Lower observed exposure: resolve remaining findings and keep dependencies current.", "#0369a1"
     else:
-        grade, grade_text, grade_color = "A", "No known findings returned for the dependencies checked.", "#6b9a78"
+        grade, grade_text, grade_color = "A", "No known findings returned for the dependencies checked.", "#166534"
 
     st.markdown(
         f'<div class="grade-card"><div class="grade-letter" style="color:{grade_color}">{grade}</div>'
@@ -848,22 +420,22 @@ if "scan_results" in st.session_state:
             gauge = go.Figure(go.Indicator(
                 mode="gauge+number",
                 value=risk_score,
-                number={"suffix": "/100", "font": {"color": "#f1ede4"}},
-                title={"text": "Risk score", "font": {"color": "#b9b3a3", "size": 15}},
+                number={"suffix": "/100", "font": {"color": "#1f2937"}},
+                title={"text": "Risk score", "font": {"color": "#14532d", "size": 15}},
                 gauge={
-                    "axis": {"range": [0, 100], "tickcolor": "#8a8f86"},
+                    "axis": {"range": [0, 100], "tickcolor": "#64748b"},
                     "bar": {"color": level_color},
-                    "bgcolor": "#1c2b23",
+                    "bgcolor": "#f3f8f4",
                     "borderwidth": 0,
                     "steps": [
-                        {"range": [0, 30], "color": "#223329"},
-                        {"range": [30, 60], "color": "#2a3d31"},
-                        {"range": [60, 100], "color": "#33493c"},
+                        {"range": [0, 30], "color": "#e8f5eb"},
+                        {"range": [30, 60], "color": "#fef3c7"},
+                        {"range": [60, 100], "color": "#fee2e2"},
                     ],
                 },
             ))
             gauge.update_layout(
-                paper_bgcolor="rgba(0,0,0,0)", font_color="#26382a",
+                paper_bgcolor="#ffffff", plot_bgcolor="#ffffff", font_color="#1f2937",
                 height=260, margin=dict(l=20, r=20, t=50, b=10),
             )
             st.plotly_chart(gauge, width="stretch")
@@ -881,11 +453,11 @@ if "scan_results" in st.session_state:
                 color_discrete_map=SEVERITY_COLORS, title="Findings by severity",
             )
             fig.update_layout(
-                paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-                font_color="#26382a", showlegend=False,
+                paper_bgcolor="#ffffff", plot_bgcolor="#ffffff",
+                font_color="#1f2937", showlegend=False,
                 height=260, margin=dict(l=10, r=10, t=45, b=10),
             )
-            fig.update_yaxes(showgrid=False, visible=False)
+            fig.update_yaxes(showgrid=True, gridcolor="#e7eee8", zeroline=False, color="#475569", title=None)
             st.plotly_chart(fig, width="stretch")
 
         st.caption(
@@ -904,7 +476,7 @@ if "scan_results" in st.session_state:
     # ---- Recommended fixes ------------------------------------------------ #
     with tab_fix:
         if upgrades:
-            st.write("Upgrade these packages to the lowest version that resolves every reported issue:")
+            st.write("Upgrade these packages to the newest fixed version reported across the findings:")
             st.dataframe(
                 pd.DataFrame(upgrades).rename(columns={
                     "package": "Package", "current": "Current", "target": "Upgrade to"
