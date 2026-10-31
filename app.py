@@ -14,7 +14,7 @@ from scanner.enrichment import (
 )
 from scanner.remediation import build_fixed_requirements, suggest_upgrades
 from scanner.report_generator import generate_report
-from scanner.risk_engine import calculate_risk, get_priority, get_risk_level, sort_findings
+from scanner.risk_engine import calculate_risk, deduplicate_findings, get_priority, get_risk_level, sort_findings
 from scanner.vulnerability_checker import check_vulnerability
 
 
@@ -351,6 +351,7 @@ if scan_clicked:
                 )
                 warnings.extend(enrich_warnings)
 
+        findings = deduplicate_findings(findings)
         findings = sort_findings(findings)
         risk_score = calculate_risk(findings)
         completed = len(scan_errors) == 0 and len(parser_errors) == 0
