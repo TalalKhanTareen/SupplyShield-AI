@@ -50,32 +50,32 @@ st.markdown(
     """
     <style>
     :root {
-        --bg: #14201a; --surface: #1c2b23; --surface-2: #223329;
-        --border: #33493c; --green: #6b9a78; --green-dark: #4f7a5c;
-        --camel: #c19a6b; --camel-light: #d2ae7e;
-        --text: #f1ede4; --muted: #b9b3a3;
+        --bg: #f4f7f2; --surface: #ffffff; --surface-2: #edf3ec;
+        --border: #d4dfd3; --green: #39754a; --green-dark: #285b38;
+        --camel: #a86f2c; --camel-light: #80501d;
+        --text: #1d2a20; --muted: #5b6a5e;
     }
     #MainMenu, footer { visibility: hidden; }
     .block-container { padding-top: 1.6rem; max-width: 1200px; }
 
     /* ---------- hero ---------- */
     .hero {
-        background: radial-gradient(circle at 88% 0%, #3f5f4a 0%, #223529 42%, #14201a 100%);
+        background: radial-gradient(circle at 88% 0%, #e0efdf 0%, #edf4e9 48%, #fbf8f0 100%);
         border: 1px solid var(--border); border-radius: 18px;
         border-bottom: 3px solid var(--camel);
         padding: 34px 36px; margin-bottom: 1.2rem;
     }
     .hero .eyebrow { color: var(--camel); font-weight: 700; letter-spacing: .12em;
                      font-size: .78rem; text-transform: uppercase; }
-    .hero h1 { margin: 6px 0 8px 0; font-size: 2.5rem; font-weight: 800; color: #f6f2e9; line-height: 1.1; }
-    .hero p  { margin: 0; color: #c4bdad; font-size: 1.05rem; max-width: 720px; }
-    .hero code { background: #2a3d31; color: var(--camel-light); padding: 1px 6px; border-radius: 5px; }
+    .hero h1 { margin: 6px 0 8px 0; font-size: 2.5rem; font-weight: 800; color: #1d3424; line-height: 1.1; }
+    .hero p  { margin: 0; color: #4d6252; font-size: 1.05rem; max-width: 720px; }
+    .hero code { background: #e2ece0; color: #714719; padding: 1px 6px; border-radius: 5px; }
     .hero .chips { margin-top: 18px; }
 
     /* ---------- pills ---------- */
     .pill { display: inline-block; padding: 3px 11px; margin: 0 6px 6px 0;
             border-radius: 999px; font-size: .76rem; font-weight: 600;
-            border: 1px solid #3d5547; color: #cfc8b8; background: #22332a;
+            border: 1px solid #d1ddcf; color: #425348; background: #edf4eb;
             transition: all .2s ease; }
     .hero .pill:hover { border-color: var(--camel); color: var(--camel-light); transform: translateY(-1px); }
     .pill.on  { border-color: var(--green-dark); color: #9fcbab; background: #1d3326; }
@@ -88,7 +88,7 @@ st.markdown(
     .card:hover { transform: translateY(-4px); border-color: var(--camel);
                   box-shadow: 0 10px 24px rgba(0,0,0,.28); }
     .card .num { color: var(--camel); font-weight: 800; font-size: .85rem; letter-spacing: .08em; }
-    .card h4 { margin: 4px 0 6px 0; color: #f6f2e9; font-size: 1.08rem; }
+    .card h4 { margin: 4px 0 6px 0; color: #203728; font-size: 1.08rem; }
     .card p  { margin: 0; color: var(--muted); font-size: .93rem; line-height: 1.5; }
 
     div[data-testid="stMetric"] { background: var(--surface); border: 1px solid var(--border);
@@ -102,8 +102,8 @@ st.markdown(
                border: 1px solid var(--border); border-left-width: 6px; background: var(--surface); }
     .verdict .label { font-size: .78rem; font-weight: 700; letter-spacing: .1em;
                       text-transform: uppercase; opacity: .95; }
-    .verdict .headline { font-size: 1.35rem; font-weight: 700; color: #f6f2e9; margin: 2px 0 4px 0; }
-    .verdict .detail { color: #c4bdad; font-size: .97rem; }
+    .verdict .headline { font-size: 1.35rem; font-weight: 700; color: #203728; margin: 2px 0 4px 0; }
+    .verdict .detail { color: #4d6252; font-size: .97rem; }
 
     /* ---------- buttons ---------- */
     [data-testid="stBaseButton-primary"] {
@@ -150,7 +150,7 @@ st.markdown(
     .section-kicker { color: var(--camel-light); font-size: .74rem; font-weight: 800;
                       letter-spacing: .14em; text-transform: uppercase; margin-bottom: .35rem; }
     .grade-card { display:flex; align-items:center; gap:18px; padding:18px 20px; margin:.6rem 0 1rem;
-                  border:1px solid var(--border); border-radius:14px; background:linear-gradient(110deg,#1c2b23,#223329); }
+                  border:1px solid var(--border); border-radius:14px; background:linear-gradient(110deg,#ffffff,#edf5eb); }
     .grade-letter { display:flex; align-items:center; justify-content:center; min-width:66px; height:66px;
                     border-radius:15px; font-size:2rem; font-weight:900; border:1px solid currentColor;
                     background:rgba(255,255,255,.025); }
@@ -158,7 +158,7 @@ st.markdown(
     .grade-copy p { color:var(--muted); margin:.2rem 0 0; font-size:.9rem; }
     .feature-strip { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
     .feature-chip { border:1px solid #3d5547; border-radius:9px; padding:7px 10px;
-                    background:rgba(28,43,35,.78); color:#d8d1c2; font-size:.82rem; }
+                    background:rgba(255,255,255,.88); color:#344b39; font-size:.82rem; }
     button:focus-visible, input:focus-visible { outline:2px solid var(--camel-light) !important; outline-offset:2px; }
     @media (max-width: 700px) { .hero { padding:24px 20px; } .hero h1 { font-size:1.9rem; } }
     </style>
@@ -545,7 +545,7 @@ if "scan_results" in st.session_state:
                 },
             ))
             gauge.update_layout(
-                paper_bgcolor="rgba(0,0,0,0)", font_color="#f1ede4",
+                paper_bgcolor="rgba(0,0,0,0)", font_color="#26382a",
                 height=260, margin=dict(l=20, r=20, t=50, b=10),
             )
             st.plotly_chart(gauge, width="stretch")
@@ -564,7 +564,7 @@ if "scan_results" in st.session_state:
             )
             fig.update_layout(
                 paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-                font_color="#f1ede4", showlegend=False,
+                font_color="#26382a", showlegend=False,
                 height=260, margin=dict(l=10, r=10, t=45, b=10),
             )
             fig.update_yaxes(showgrid=False, visible=False)
