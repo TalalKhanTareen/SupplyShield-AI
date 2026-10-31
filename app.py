@@ -12,6 +12,7 @@ from scanner.enrichment import (
     get_kev_catalog,
     get_package_info,
 )
+from scanner.remediation import build_fixed_requirements, suggest_upgrades
 from scanner.report_generator import generate_report
 from scanner.risk_engine import calculate_risk, get_priority, get_risk_level, sort_findings
 from scanner.vulnerability_checker import check_vulnerability
@@ -19,20 +20,23 @@ from scanner.vulnerability_checker import check_vulnerability
 
 BASE_DIR = Path(__file__).resolve().parent
 DEMO_FILE = BASE_DIR / "data" / "demo_requirements.txt"
+REPO_URL = "https://github.com/TalalKhanTareen/SupplyShield-AI"
 
+# Matte palette: forest green + camel, with muted (non-neon) status colours
 SEVERITY_COLORS = {
-    "Critical": "#ef4444",
-    "High": "#f97316",
-    "Medium": "#eab308",
-    "Low": "#3b82f6",
-    "Unknown": "#64748b",
+    "Critical": "#c4574a",  # brick
+    "High": "#d08a4a",      # burnt camel
+    "Medium": "#d4b45f",    # mustard
+    "Low": "#8aa6a3",       # muted sage-teal
+    "Unknown": "#8a8f86",   # stone
 }
+PRIORITY_COLORS = {"Urgent": "#c4574a", "Elevated": "#d08a4a", "Standard": "#a9a590"}
 RISK_COLORS = {
-    "Critical": "#ef4444",
-    "High": "#f97316",
-    "Medium": "#eab308",
-    "Low": "#3b82f6",
-    "No known findings": "#22c55e",
+    "Critical": "#c4574a",
+    "High": "#d08a4a",
+    "Medium": "#d4b45f",
+    "Low": "#8aa6a3",
+    "No known findings": "#6b9a78",  # matte green
 }
 
 st.set_page_config(
@@ -45,34 +49,98 @@ st.set_page_config(
 st.markdown(
     """
     <style>
+    :root {
+        --bg: #14201a; --surface: #1c2b23; --surface-2: #223329;
+        --border: #33493c; --green: #6b9a78; --green-dark: #4f7a5c;
+        --camel: #c19a6b; --camel-light: #d2ae7e;
+        --text: #f1ede4; --muted: #b9b3a3;
+    }
     #MainMenu, footer { visibility: hidden; }
-    .block-container { padding-top: 2rem; max-width: 1200px; }
+    .block-container { padding-top: 1.6rem; max-width: 1200px; }
 
+    /* ---------- hero ---------- */
     .hero {
-        background: linear-gradient(135deg, #12223d 0%, #0b1220 70%);
-        border: 1px solid #22385a;
-        border-radius: 16px;
-        padding: 28px 32px;
-        margin-bottom: 1.2rem;
+        background: radial-gradient(circle at 88% 0%, #3f5f4a 0%, #223529 42%, #14201a 100%);
+        border: 1px solid var(--border); border-radius: 18px;
+        border-bottom: 3px solid var(--camel);
+        padding: 34px 36px; margin-bottom: 1.2rem;
     }
-    .hero h1 { margin: 0; font-size: 2.1rem; font-weight: 800; color: #f1f6ff; }
-    .hero p  { margin: 6px 0 0 0; color: #9db2ce; font-size: 1.02rem; }
+    .hero .eyebrow { color: var(--camel); font-weight: 700; letter-spacing: .12em;
+                     font-size: .78rem; text-transform: uppercase; }
+    .hero h1 { margin: 6px 0 8px 0; font-size: 2.5rem; font-weight: 800; color: #f6f2e9; line-height: 1.1; }
+    .hero p  { margin: 0; color: #c4bdad; font-size: 1.05rem; max-width: 720px; }
+    .hero code { background: #2a3d31; color: var(--camel-light); padding: 1px 6px; border-radius: 5px; }
+    .hero .chips { margin-top: 18px; }
 
-    .pill {
-        display: inline-block; padding: 2px 10px; margin: 0 6px 4px 0;
-        border-radius: 999px; font-size: 0.75rem; font-weight: 600;
-        border: 1px solid #2c4468; color: #b7c9e4; background: #13233b;
+    /* ---------- pills ---------- */
+    .pill { display: inline-block; padding: 3px 11px; margin: 0 6px 6px 0;
+            border-radius: 999px; font-size: .76rem; font-weight: 600;
+            border: 1px solid #3d5547; color: #cfc8b8; background: #22332a;
+            transition: all .2s ease; }
+    .hero .pill:hover { border-color: var(--camel); color: var(--camel-light); transform: translateY(-1px); }
+    .pill.on  { border-color: var(--green-dark); color: #9fcbab; background: #1d3326; }
+    .pill.off { border-color: #4b524a; color: #8a8f86; }
+
+    /* ---------- cards / metrics with hover ---------- */
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+            padding: 20px 22px; height: 100%;
+            transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease; }
+    .card:hover { transform: translateY(-4px); border-color: var(--camel);
+                  box-shadow: 0 10px 24px rgba(0,0,0,.28); }
+    .card .num { color: var(--camel); font-weight: 800; font-size: .85rem; letter-spacing: .08em; }
+    .card h4 { margin: 4px 0 6px 0; color: #f6f2e9; font-size: 1.08rem; }
+    .card p  { margin: 0; color: var(--muted); font-size: .93rem; line-height: 1.5; }
+
+    div[data-testid="stMetric"] { background: var(--surface); border: 1px solid var(--border);
+                                  padding: 14px 18px; border-radius: 12px;
+                                  transition: transform .2s ease, border-color .2s ease; }
+    div[data-testid="stMetric"]:hover { transform: translateY(-2px); border-color: var(--green); }
+    div[data-testid="stMetricLabel"] { color: var(--muted); }
+
+    /* ---------- verdict banner ---------- */
+    .verdict { border-radius: 14px; padding: 18px 22px; margin: .4rem 0 1rem 0;
+               border: 1px solid var(--border); border-left-width: 6px; background: var(--surface); }
+    .verdict .label { font-size: .78rem; font-weight: 700; letter-spacing: .1em;
+                      text-transform: uppercase; opacity: .95; }
+    .verdict .headline { font-size: 1.35rem; font-weight: 700; color: #f6f2e9; margin: 2px 0 4px 0; }
+    .verdict .detail { color: #c4bdad; font-size: .97rem; }
+
+    /* ---------- buttons ---------- */
+    [data-testid="stBaseButton-primary"] {
+        background: var(--green-dark); border: 1px solid var(--green); color: #f6f2e9;
+        font-weight: 700; border-radius: 10px;
+        transition: background .2s ease, transform .15s ease, box-shadow .2s ease;
     }
-    .pill.on  { border-color: #1f6f4a; color: #4ade80; background: #0f2a20; }
-    .pill.off { border-color: #4b5563; color: #94a3b8; }
-
-    div[data-testid="stMetric"] {
-        background: #111c30; border: 1px solid #22385a;
-        padding: 16px 18px; border-radius: 12px;
+    [data-testid="stBaseButton-primary"]:hover {
+        background: var(--camel); border-color: var(--camel-light); color: #1a1a14;
+        transform: translateY(-1px); box-shadow: 0 6px 16px rgba(193,154,107,.28);
     }
-    div[data-testid="stMetricLabel"] { color: #9db2ce; }
+    [data-testid="stBaseButton-secondary"] {
+        border: 1px solid var(--camel); color: var(--camel-light); border-radius: 10px;
+        background: transparent; transition: background .2s ease, transform .15s ease;
+    }
+    [data-testid="stBaseButton-secondary"]:hover {
+        background: rgba(193,154,107,.14); border-color: var(--camel-light);
+        color: var(--camel-light); transform: translateY(-1px);
+    }
 
-    .small-note { color: #7f93b2; font-size: 0.82rem; }
+    /* ---------- tabs ---------- */
+    button[data-baseweb="tab"] { font-weight: 600; transition: color .2s ease; }
+    button[data-baseweb="tab"]:hover { color: var(--camel-light); }
+    button[data-baseweb="tab"][aria-selected="true"] { color: var(--camel-light); }
+    div[data-baseweb="tab-highlight"] { background-color: var(--camel); }
+
+    /* ---------- expanders & inputs ---------- */
+    details { border: 1px solid var(--border) !important; border-radius: 10px !important;
+              transition: border-color .2s ease; }
+    details:hover { border-color: var(--green) !important; }
+    [data-testid="stFileUploaderDropzone"] { border: 1.5px dashed var(--camel);
+                                             background: var(--surface); border-radius: 12px;
+                                             transition: background .2s ease; }
+    [data-testid="stFileUploaderDropzone"]:hover { background: var(--surface-2); }
+
+    .small-note { color: #9a9484; font-size: .82rem; }
+    .small-note a { color: var(--camel-light); }
     </style>
     """,
     unsafe_allow_html=True,
@@ -106,6 +174,22 @@ def cached_epss_lookup(cve_ids):
     return cached_epss(tuple(sorted(cve_ids)))
 
 
+def style_table(frame):
+    """Colour-code severity and priority cells."""
+    styled = frame.style
+    if "Severity" in frame.columns:
+        styled = styled.map(
+            lambda v: f"color: {SEVERITY_COLORS.get(v, '#f1ede4')}; font-weight: 700",
+            subset=["Severity"],
+        )
+    if "Priority" in frame.columns:
+        styled = styled.map(
+            lambda v: f"color: {PRIORITY_COLORS.get(v, '#f1ede4')}; font-weight: 700",
+            subset=["Priority"],
+        )
+    return styled
+
+
 # --------------------------------------------------------------------------- #
 # Sidebar
 # --------------------------------------------------------------------------- #
@@ -123,26 +207,38 @@ with st.sidebar:
     )
 
     st.markdown("### Data sources")
+    state = "on" if use_enrichment else "off"
     st.markdown(
         '<span class="pill on">OSV.dev</span>'
-        f'<span class="pill {"on" if use_enrichment else "off"}">PyPI</span>'
-        f'<span class="pill {"on" if use_enrichment else "off"}">FIRST EPSS</span>'
-        f'<span class="pill {"on" if use_enrichment else "off"}">CISA KEV</span>',
+        f'<span class="pill {state}">PyPI</span>'
+        f'<span class="pill {state}">FIRST EPSS</span>'
+        f'<span class="pill {state}">CISA KEV</span>',
         unsafe_allow_html=True,
     )
     st.caption("Ecosystem: Python / PyPI")
-    st.info("Internet access is required to query the public APIs during a scan.")
+
+    st.divider()
+    st.markdown("### Risk levels")
+    st.caption("Critical 80+  |  High 60+  |  Medium 30+  |  Low 1+")
+    st.markdown(f"[View source on GitHub]({REPO_URL})")
 
 
 # --------------------------------------------------------------------------- #
-# Header + input
+# Header
 # --------------------------------------------------------------------------- #
 st.markdown(
     """
     <div class="hero">
-      <h1>SupplyShield AI</h1>
-      <p>Audit pinned Python dependencies for known vulnerabilities, prioritise
-      remediation with real-world exploit data, and export an audit report.</p>
+      <div class="eyebrow">Dependency security audit</div>
+      <h1>Know what is risky in your<br>Python dependencies.</h1>
+      <p>Upload a <code>requirements.txt</code> and get a prioritised list of known
+      vulnerabilities, backed by live exploit data, with the exact upgrades to fix them.</p>
+      <div class="chips">
+        <span class="pill">No sign-up</span>
+        <span class="pill">No API keys</span>
+        <span class="pill">Free public data sources</span>
+        <span class="pill">Exportable report</span>
+      </div>
     </div>
     """,
     unsafe_allow_html=True,
@@ -150,16 +246,24 @@ st.markdown(
 
 default_manifest = DEMO_FILE.read_text(encoding="utf-8") if DEMO_FILE.exists() else ""
 
-input_tab, paste_tab = st.tabs(["Upload manifest", "Paste or use demo"])
+# --------------------------------------------------------------------------- #
+# Input
+# --------------------------------------------------------------------------- #
+st.markdown("#### 1. Provide your dependencies")
+input_tab, paste_tab = st.tabs(["Upload a file", "Paste text or use the demo"])
 with input_tab:
     uploaded_file = st.file_uploader(
         "Upload a requirements.txt file",
         type=["txt"],
         help="Use exact package pins such as requests==2.31.0.",
+        label_visibility="collapsed",
     )
 with paste_tab:
     pasted_manifest = st.text_area(
-        "requirements.txt content", value=default_manifest, height=150
+        "requirements.txt content",
+        value=default_manifest,
+        height=150,
+        help="The demo manifest is preloaded so you can try the tool immediately.",
     )
 
 manifest = (
@@ -168,11 +272,15 @@ manifest = (
     else pasted_manifest
 )
 
+st.markdown("#### 2. Run the audit")
 scan_col, hint_col = st.columns([1, 3])
 with scan_col:
     scan_clicked = st.button("Run security audit", type="primary", width="stretch")
 with hint_col:
-    st.caption("The demo manifest is preloaded, so you can scan immediately.")
+    st.caption(
+        "Only exact pins (package==1.2.3) can be checked. "
+        "Your manifest is sent only to the public APIs listed in the sidebar."
+    )
 
 
 # --------------------------------------------------------------------------- #
@@ -257,7 +365,34 @@ if scan_clicked:
             "completed": completed,
             "enriched": use_enrichment,
         }
-        status.success("Audit finished.")
+        status.empty()
+        progress.empty()
+
+
+# --------------------------------------------------------------------------- #
+# Empty state: explain the product before the first scan
+# --------------------------------------------------------------------------- #
+if "scan_results" not in st.session_state:
+    st.markdown("#### How it works")
+    a, b, c = st.columns(3)
+    a.markdown(
+        '<div class="card"><div class="num">STEP 1</div><h4>Check for known flaws</h4>'
+        "<p>Every pinned package is looked up in the OSV vulnerability database "
+        "for known security issues.</p></div>",
+        unsafe_allow_html=True,
+    )
+    b.markdown(
+        '<div class="card"><div class="num">STEP 2</div><h4>Prioritise with real data</h4>'
+        "<p>Findings are ranked using EPSS exploit probability and the CISA list "
+        "of vulnerabilities exploited in the wild.</p></div>",
+        unsafe_allow_html=True,
+    )
+    c.markdown(
+        '<div class="card"><div class="num">STEP 3</div><h4>Fix with confidence</h4>'
+        "<p>Get the exact upgrade for each package, plus a ready-to-use "
+        "requirements file and a JSON report.</p></div>",
+        unsafe_allow_html=True,
+    )
 
 
 # --------------------------------------------------------------------------- #
@@ -273,12 +408,52 @@ if "scan_results" in st.session_state:
     risk_score = results["risk_score"]
     enriched = results.get("enriched", False)
     risk_level = get_risk_level(risk_score)
+    level_color = RISK_COLORS.get(risk_level, "#c19a6b")
 
     st.divider()
-    st.subheader("Security overview")
+    st.markdown("#### Results")
 
+    # ---- Plain-English verdict ------------------------------------------- #
+    vulnerable_pkgs = len({item["package"].lower() for item in findings})
     urgent = sum(1 for item in findings if get_priority(item) == "Urgent")
     exploited = sum(1 for item in findings if item.get("known_exploited"))
+    upgrades = suggest_upgrades(dependencies, findings)
+
+    if findings:
+        headline = (
+            f"{len(findings)} known vulnerabilit{'y' if len(findings) == 1 else 'ies'} "
+            f"in {vulnerable_pkgs} of {len(dependencies)} packages"
+        )
+        detail = (
+            f"Overall risk is <b>{risk_level}</b> ({risk_score}/100). "
+            + (f"<b>{urgent}</b> need urgent attention. " if enriched and urgent else "")
+            + (f"{len(upgrades)} package upgrade(s) are recommended below." if upgrades else "")
+        )
+        label = "Action needed"
+    elif results["completed"]:
+        headline = "No known vulnerabilities found"
+        detail = "All dependencies were checked and none matched a known vulnerability."
+        label = "Looks good"
+        level_color = RISK_COLORS["No known findings"]
+    else:
+        headline = "Audit incomplete"
+        detail = "Some dependencies could not be verified. Review the Audit issues tab before drawing conclusions."
+        label = "Needs review"
+        level_color = RISK_COLORS["Medium"]
+
+    st.markdown(
+        f'<div class="verdict" style="border-left-color:{level_color}">'
+        f'<div class="label" style="color:{level_color}">{label}</div>'
+        f'<div class="headline">{headline}</div>'
+        f'<div class="detail">{detail}</div></div>',
+        unsafe_allow_html=True,
+    )
+
+    if enriched and exploited:
+        st.error(
+            f"{exploited} finding(s) appear in the CISA Known Exploited "
+            "Vulnerabilities catalog, so attackers are already using them. Patch these first."
+        )
 
     c1, c2, c3, c4, c5 = st.columns(5)
     c1.metric("Dependencies", len(dependencies))
@@ -291,12 +466,6 @@ if "scan_results" in st.session_state:
         help="Findings in the CISA KEV catalog or with EPSS >= 50%.",
     )
 
-    if enriched and exploited:
-        st.error(
-            f"{exploited} finding(s) appear in the CISA Known Exploited "
-            "Vulnerabilities catalog. Patch these first."
-        )
-
     if findings:
         gauge_col, chart_col = st.columns([1, 1.2])
 
@@ -304,52 +473,42 @@ if "scan_results" in st.session_state:
             gauge = go.Figure(go.Indicator(
                 mode="gauge+number",
                 value=risk_score,
-                number={"suffix": "/100", "font": {"color": "#e8f1ff"}},
-                title={"text": f"{risk_level} risk", "font": {"color": "#9db2ce", "size": 16}},
+                number={"suffix": "/100", "font": {"color": "#f1ede4"}},
+                title={"text": "Risk score", "font": {"color": "#b9b3a3", "size": 15}},
                 gauge={
-                    "axis": {"range": [0, 100], "tickcolor": "#64748b"},
-                    "bar": {"color": RISK_COLORS.get(risk_level, "#3b82f6")},
-                    "bgcolor": "#111c30",
+                    "axis": {"range": [0, 100], "tickcolor": "#8a8f86"},
+                    "bar": {"color": level_color},
+                    "bgcolor": "#1c2b23",
                     "borderwidth": 0,
                     "steps": [
-                        {"range": [0, 30], "color": "#14243a"},
-                        {"range": [30, 60], "color": "#1a2c47"},
-                        {"range": [60, 100], "color": "#21365a"},
+                        {"range": [0, 30], "color": "#223329"},
+                        {"range": [30, 60], "color": "#2a3d31"},
+                        {"range": [60, 100], "color": "#33493c"},
                     ],
                 },
             ))
             gauge.update_layout(
-                paper_bgcolor="rgba(0,0,0,0)",
-                font_color="#e8f1ff",
-                height=280,
-                margin=dict(l=20, r=20, t=50, b=10),
+                paper_bgcolor="rgba(0,0,0,0)", font_color="#f1ede4",
+                height=260, margin=dict(l=20, r=20, t=50, b=10),
             )
             st.plotly_chart(gauge, width="stretch")
 
         with chart_col:
-            severity_order = ["Critical", "High", "Medium", "Low", "Unknown"]
+            order = ["Critical", "High", "Medium", "Low", "Unknown"]
             counts = (
                 pd.Series([item["severity"] for item in findings])
                 .value_counts()
-                .reindex(severity_order, fill_value=0)
+                .reindex(order, fill_value=0)
             )
             chart_data = counts[counts > 0].rename_axis("Severity").reset_index(name="Count")
             fig = px.bar(
-                chart_data,
-                x="Severity",
-                y="Count",
-                color="Severity",
-                text="Count",
-                color_discrete_map=SEVERITY_COLORS,
-                title="Findings by severity",
+                chart_data, x="Severity", y="Count", color="Severity", text="Count",
+                color_discrete_map=SEVERITY_COLORS, title="Findings by severity",
             )
             fig.update_layout(
-                paper_bgcolor="rgba(0,0,0,0)",
-                plot_bgcolor="rgba(0,0,0,0)",
-                font_color="#e8f1ff",
-                showlegend=False,
-                height=280,
-                margin=dict(l=10, r=10, t=45, b=10),
+                paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+                font_color="#f1ede4", showlegend=False,
+                height=260, margin=dict(l=10, r=10, t=45, b=10),
             )
             fig.update_yaxes(showgrid=False, visible=False)
             st.plotly_chart(fig, width="stretch")
@@ -358,25 +517,64 @@ if "scan_results" in st.session_state:
             "Score = sum of severity weights x 10, capped at 100. "
             "Findings are sorted by remediation priority, then severity."
         )
-    elif results["completed"]:
-        st.success("No matching known vulnerabilities were returned for the dependencies checked.")
-    else:
-        st.warning(
-            "No vulnerabilities were returned, but the audit is incomplete. "
-            "Review verification errors before drawing conclusions."
-        )
 
     for message in warnings:
         st.warning(message)
 
-    tab_findings, tab_dependencies, tab_issues = st.tabs(
-        ["Vulnerability findings", "Dependencies", "Audit issues"]
+    tab_fix, tab_findings, tab_dependencies, tab_issues = st.tabs(
+        ["Recommended fixes", "Vulnerability findings", "Dependencies", "Audit issues"]
     )
 
+    # ---- Recommended fixes ------------------------------------------------ #
+    with tab_fix:
+        if upgrades:
+            st.write("Upgrade these packages to the lowest version that resolves every reported issue:")
+            st.dataframe(
+                pd.DataFrame(upgrades).rename(columns={
+                    "package": "Package", "current": "Current", "target": "Upgrade to"
+                }),
+                width="stretch",
+                hide_index=True,
+            )
+            st.markdown("**Copy and run**")
+            st.code(
+                "pip install " + " ".join(f"{u['package']}=={u['target']}" for u in upgrades),
+                language="bash",
+            )
+            st.download_button(
+                "Download upgraded requirements.txt",
+                data=build_fixed_requirements(dependencies, upgrades),
+                file_name="requirements.fixed.txt",
+                mime="text/plain",
+            )
+            st.caption(
+                "Always run your tests after upgrading. Some upgrades cross major versions "
+                "and can include breaking changes."
+            )
+        elif findings:
+            st.info(
+                "No safe upgrade target was reported for these findings. "
+                "Check the references in the findings tab for mitigations."
+            )
+        else:
+            st.success("Nothing to fix. No known vulnerabilities were found.")
+
+    # ---- Findings --------------------------------------------------------- #
     with tab_findings:
         if findings:
+            severities = sorted({f["severity"] for f in findings}, key=lambda s: list(SEVERITY_COLORS).index(s))
+            f1, f2 = st.columns([2, 1])
+            chosen = f1.multiselect("Filter by severity", severities, default=severities)
+            query = f2.text_input("Search package or ID", placeholder="e.g. flask")
+            visible = [
+                f for f in findings
+                if f["severity"] in chosen
+                and (not query or query.lower() in f["package"].lower()
+                     or query.lower() in f["vulnerability_id"].lower())
+            ]
+
             rows = []
-            for item in findings:
+            for item in visible:
                 row = {
                     "Priority": get_priority(item) if enriched else "n/a",
                     "Package": item["package"],
@@ -392,45 +590,53 @@ if "scan_results" in st.session_state:
                 row["Summary"] = item["summary"]
                 rows.append(row)
 
-            column_config = {}
-            if enriched:
-                column_config["Exploit probability (EPSS)"] = st.column_config.ProgressColumn(
-                    "Exploit probability (EPSS)",
-                    format="%.1f%%",
-                    min_value=0,
-                    max_value=100,
+            if rows:
+                frame = pd.DataFrame(rows)
+                column_config = {}
+                if enriched:
+                    column_config["Exploit probability (EPSS)"] = st.column_config.ProgressColumn(
+                        "Exploit probability (EPSS)", format="%.1f%%", min_value=0, max_value=100,
+                    )
+                st.dataframe(
+                    style_table(frame), width="stretch", hide_index=True,
+                    column_config=column_config,
                 )
-            st.dataframe(
-                pd.DataFrame(rows),
-                width="stretch",
-                hide_index=True,
-                column_config=column_config,
-            )
+                st.download_button(
+                    "Download findings as CSV",
+                    data=frame.to_csv(index=False),
+                    file_name="supplyshield-findings.csv",
+                    mime="text/csv",
+                )
 
-            st.markdown("#### Details")
-            for item in findings:
-                label = f"{item['vulnerability_id']}  |  {item['package']}  |  {item['severity']}"
-                with st.expander(label):
-                    st.write(item["summary"])
-                    if item.get("fixed_version"):
-                        st.success(f"Upgrade to {item['fixed_version']} or later.")
-                    if enriched and item.get("cve_ids"):
-                        st.caption("CVE: " + ", ".join(item["cve_ids"]))
-                    if item.get("references"):
-                        st.markdown("**References**")
-                        for url in item["references"][:5]:
-                            st.markdown(f"- {url}")
+                st.markdown("#### Details")
+                for item in visible:
+                    label = f"{item['vulnerability_id']}  |  {item['package']}  |  {item['severity']}"
+                    with st.expander(label):
+                        st.write(item["summary"])
+                        if item.get("fixed_version"):
+                            st.success(f"Upgrade to {item['fixed_version']} or later.")
+                        if enriched and item.get("cve_ids"):
+                            st.caption("CVE: " + ", ".join(item["cve_ids"]))
+                        if item.get("references"):
+                            st.markdown("**References**")
+                            for url in item["references"][:5]:
+                                st.markdown(f"- {url}")
+            else:
+                st.info("No findings match the current filter.")
         else:
             st.info("There are no vulnerability findings to display.")
 
+    # ---- Dependencies ----------------------------------------------------- #
     with tab_dependencies:
         if dependencies:
+            vulnerable = {item["package"].lower() for item in findings}
             dep_rows = []
             for item in dependencies:
                 row = {
                     "Package": item["name"],
                     "Pinned version": item["version"],
                     "Ecosystem": item["ecosystem"],
+                    "Vulnerable": "Yes" if item["name"].lower() in vulnerable else "No",
                 }
                 if enriched:
                     row["Latest on PyPI"] = item.get("latest_version") or "Unknown"
@@ -440,6 +646,7 @@ if "scan_results" in st.session_state:
         else:
             st.info("No dependencies were successfully parsed.")
 
+    # ---- Issues ----------------------------------------------------------- #
     with tab_issues:
         if scan_errors:
             st.subheader("Dependencies not verified")
@@ -450,12 +657,11 @@ if "scan_results" in st.session_state:
         if not scan_errors and not parser_errors:
             st.success("No scan or manifest parsing errors were reported.")
 
-    report = generate_report(
-        dependencies, findings, parser_errors + scan_errors, risk_score, warnings
-    )
     st.download_button(
-        "Download JSON audit report",
-        data=report,
+        "Download full JSON audit report",
+        data=generate_report(
+            dependencies, findings, parser_errors + scan_errors, risk_score, warnings
+        ),
         file_name="supplyshield-audit-report.json",
         mime="application/json",
         type="primary",
@@ -463,8 +669,11 @@ if "scan_results" in st.session_state:
 
 st.divider()
 st.markdown(
-    '<div class="small-note">SupplyShield AI is a prototype for known-vulnerability '
-    "discovery. A clean scan does not prove a dependency is secure or detect every "
-    "malicious package.</div>",
+    '<div class="small-note">Data from '
+    '<a href="https://osv.dev">OSV.dev</a>, <a href="https://pypi.org">PyPI</a>, '
+    '<a href="https://www.first.org/epss/">FIRST EPSS</a> and '
+    '<a href="https://www.cisa.gov/known-exploited-vulnerabilities-catalog">CISA KEV</a>. '
+    "SupplyShield AI is a prototype for known-vulnerability discovery. A clean scan does not "
+    "prove a dependency is secure or detect every malicious package.</div>",
     unsafe_allow_html=True,
 )

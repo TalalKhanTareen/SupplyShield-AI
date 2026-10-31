@@ -12,7 +12,8 @@ SupplyShield AI is a Streamlit-based software supply-chain security prototype. I
 - View findings, dependencies, and audit issues in separate dashboard tabs
 - Prioritise fixes as Urgent / Elevated / Standard using EPSS and CISA KEV
 - Flag outdated and yanked package versions via PyPI
-- Export a JSON security report
+- Get recommended upgrades, a copy-paste `pip install` command, and a fixed `requirements.txt` download
+- Filter findings, export CSV, and export a JSON security report
 - Run automated risk-engine tests
 
 ## Free data sources (no API keys)
