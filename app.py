@@ -161,6 +161,52 @@ st.markdown(
                     background:rgba(255,255,255,.88); color:#344b39; font-size:.82rem; }
     button:focus-visible, input:focus-visible { outline:2px solid var(--camel-light) !important; outline-offset:2px; }
     @media (max-width: 700px) { .hero { padding:24px 20px; } .hero h1 { font-size:1.9rem; } }
+
+    /* High-contrast white theme */
+    html, body, [data-testid="stAppViewContainer"], [data-testid="stMain"],
+    [data-testid="stMainBlockContainer"] { background: #ffffff !important; color: #17251b !important; }
+    [data-testid="stHeader"] { background: rgba(255,255,255,.96) !important; }
+    [data-testid="stSidebar"], [data-testid="stSidebar"] > div {
+        background: #f3f7f2 !important; border-right: 1px solid #d7e1d5 !important;
+    }
+    .block-container { max-width: 1280px; padding-top: 2rem; padding-bottom: 3rem; }
+    .hero {
+        background: linear-gradient(115deg, #ffffff 0%, #f0f7ef 68%, #e2f0e2 100%) !important;
+        border: 1px solid #cbdacb !important; border-bottom: 4px solid #267442 !important;
+        box-shadow: 0 8px 28px rgba(28, 66, 37, .09) !important;
+    }
+    .hero .eyebrow, .section-kicker { color: #87531d !important; }
+    .hero h1, .card h4, .verdict .headline, .grade-copy strong { color: #172f20 !important; }
+    .hero p, .verdict .detail, .card p, .grade-copy p { color: #43564a !important; }
+    .hero code { background: #e6efe5 !important; color: #744817 !important; }
+    .pill, .feature-chip {
+        background: #ffffff !important; color: #304638 !important; border-color: #cbd9cb !important;
+    }
+    .pill.on { background: #e0f2e4 !important; color: #205d32 !important; border-color: #78ad83 !important; }
+    .pill.off { background: #f4f5f3 !important; color: #5c665e !important; border-color: #d8ded7 !important; }
+    .card, div[data-testid="stMetric"], .verdict, details,
+    [data-testid="stFileUploaderDropzone"] {
+        background: #ffffff !important; border-color: #d3ded2 !important;
+        box-shadow: 0 3px 12px rgba(27, 54, 32, .045);
+    }
+    .card:hover { border-color: #478557 !important; box-shadow: 0 9px 22px rgba(27, 76, 39, .12) !important; }
+    div[data-testid="stMetricLabel"], div[data-testid="stMetricValue"],
+    div[data-testid="stMetricDelta"] { color: #263c2c !important; }
+    [data-testid="stBaseButton-primary"] {
+        background: #246b39 !important; border-color: #1c5a2e !important; color: #ffffff !important;
+    }
+    [data-testid="stBaseButton-primary"]:hover { background: #174d29 !important; }
+    [data-testid="stBaseButton-secondary"] {
+        background: #ffffff !important; border-color: #8a642e !important; color: #704719 !important;
+    }
+    button[data-baseweb="tab"] { color: #4a5d4e !important; }
+    button[data-baseweb="tab"][aria-selected="true"] { color: #1e6634 !important; }
+    div[data-baseweb="tab-highlight"] { background-color: #267442 !important; }
+    .grade-card { background: linear-gradient(110deg,#ffffff,#f0f7ef) !important; border-color: #cbdacb !important; }
+    .grade-letter { background: #ffffff !important; }
+    .small-note { color: #59685d !important; }
+    .small-note a { color: #205f32 !important; }
+    [data-testid="stDataFrame"], [data-testid="stTable"] { border: 1px solid #d3ded2; border-radius: 10px; }
     </style>
     """,
     unsafe_allow_html=True,
