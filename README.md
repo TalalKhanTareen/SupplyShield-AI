@@ -84,6 +84,7 @@ The demo intentionally uses older pinned packages to exercise the vulnerability 
 Install dependencies, then run:
 
 ```bash
+pip install -r requirements-dev.txt
 python -m pytest -q
 ```
 
