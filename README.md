@@ -1,39 +1,52 @@
 # SupplyShield AI
 
-SupplyShield AI is a Streamlit-based software supply-chain security prototype. It audits pinned Python dependencies against the OSV vulnerability database, classifies findings, calculates a cumulative risk score, and exports a JSON audit report.
+**Automated Software Supply-Chain Security Auditing**
 
-## Features
+SupplyShield AI is a Python dependency-auditing dashboard built with Streamlit. It checks pinned dependencies for publicly reported vulnerabilities, enriches findings with exploit intelligence, ranks remediation priorities, and produces downloadable audit artifacts.
 
-- Upload or paste a Python `requirements.txt` manifest
-- Parse exact package versions and flag unsupported manifest entries
-- Query OSV for known vulnerabilities
-- Extract severity and fixed-version information where supplied by OSV
-- Calculate a cumulative risk score from returned findings
-- View findings, dependencies, and audit issues in separate dashboard tabs
-- Prioritise fixes as Urgent / Elevated / Standard using EPSS and CISA KEV
-- Flag outdated and yanked package versions via PyPI
-- Get recommended upgrades, a copy-paste `pip install` command, and a fixed `requirements.txt` download
-- Filter findings, export CSV, and export a JSON security report
-- Run automated risk-engine tests
+> **Project status:** Hackathon / educational prototype. It helps discover known vulnerabilities; it is not a guarantee that software or dependencies are safe.
 
-## Free data sources (no API keys)
+## Highlights
 
-| Source | Used for |
-| --- | --- |
-| [OSV.dev](https://osv.dev) | Known vulnerabilities, severity, fixed versions |
-| [PyPI JSON API](https://pypi.org) | Latest release and yanked-release detection |
-| [FIRST EPSS](https://www.first.org/epss/) | Probability a CVE will be exploited |
-| [CISA KEV](https://www.cisa.gov/known-exploited-vulnerabilities-catalog) | CVEs confirmed exploited in the wild |
+- Upload, paste, or start with the included demo `requirements.txt`.
+- Parse exact package pins and report unsupported or unverified manifest lines.
+- Query the [OSV.dev](https://osv.dev) vulnerability database.
+- Enrich CVE findings with [FIRST EPSS](https://www.first.org/epss/) exploit-probability data and the [CISA Known Exploited Vulnerabilities catalog](https://www.cisa.gov/known-exploited-vulnerabilities-catalog).
+- Check PyPI for current package versions and yanked releases.
+- Deduplicate related advisories and calculate an explainable risk score.
+- Prioritise fixes, recommend fixed versions where available, and generate a revised requirements file.
+- Explore findings, severity charts, package status, and scan issues in a dashboard.
+- Export findings to CSV and the complete audit to JSON.
+- Run automated tests and continuous integration with GitHub Actions.
 
-Enrichment can be switched off from the sidebar. If an enrichment source is unreachable, the scan still completes and shows a warning.
+## Architecture
 
-## Technology
+```text
+app.py
+  ├── scanner/dependency_parser.py     Parse and validate dependency pins
+  ├── scanner/vulnerability_checker.py Query OSV for known vulnerabilities
+  ├── scanner/enrichment.py            PyPI, FIRST EPSS and CISA KEV lookups
+  ├── scanner/risk_engine.py           Deduplication, risk and priority
+  ├── scanner/remediation.py            Upgrade suggestions and fixed manifest
+  └── scanner/report_generator.py      JSON audit report
+```
 
-Python, Streamlit, Pandas, Plotly, Requests, Packaging, CVSS, and the OSV API.
+## Data sources
 
-## Run locally on Windows
+| Source | Purpose | API key |
+|---|---|---|
+| [OSV.dev](https://osv.dev) | Vulnerability records and fixed-version ranges | Not required |
+| [PyPI JSON API](https://pypi.org) | Latest package release and yanked-release status | Not required |
+| [FIRST EPSS](https://www.first.org/epss/) | Estimated probability of CVE exploitation | Not required |
+| [CISA KEV](https://www.cisa.gov/known-exploited-vulnerabilities-catalog) | Vulnerabilities known to be exploited in the wild | Not required |
 
-Open PowerShell in the project folder.
+The dashboard uses public services over HTTPS. Enrichment can be disabled in the sidebar. If a data source is unavailable, the app reports warnings or failed checks rather than silently treating unavailable data as safe.
+
+## Run locally
+
+Python 3.11 or newer is recommended.
+
+### Windows PowerShell
 
 ```powershell
 py -3.11 -m venv .venv
@@ -43,25 +56,84 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
-The dashboard opens at `http://localhost:8501`.
+### macOS / Linux
 
-If PowerShell blocks virtual-environment activation, run this once in the same terminal:
-
-```powershell
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-.\.venv\Scripts\Activate.ps1
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+streamlit run app.py
 ```
 
-## Run tests
+Open the local address printed by Streamlit (normally `http://localhost:8501`). An internet connection is required for live vulnerability and enrichment lookups.
 
-```powershell
+## Try the demo
+
+1. Start the app.
+2. Open **Paste text or use the demo**; the sample manifest is preloaded.
+3. Select **Run security audit**.
+4. Review the verdict, score, severity distribution, and recommended fixes.
+5. Explore the findings, dependencies, and audit-issues tabs.
+6. Download the CSV findings or JSON audit report.
+
+The demo intentionally uses older pinned packages to exercise the vulnerability workflow. Do not use its dependencies for a production application.
+
+## Tests and quality checks
+
+Install dependencies, then run:
+
+```bash
 python -m pytest -q
 ```
 
-## Demo
+The tests cover dependency parsing, risk scoring and prioritisation, remediation suggestions, and related helper logic. GitHub Actions runs the automated test suite on pushes and pull requests.
 
-The included `data/demo_requirements.txt` is preloaded in the dashboard. Press **Run Security Audit** to test the workflow. Internet access is required because vulnerability lookups are sent to OSV.
+## Repository structure
 
-## Important limitations
+```text
+.
+├── app.py
+├── assets/
+│   └── supplyshield.css
+├── data/
+│   └── demo_requirements.txt
+├── scanner/
+│   ├── __init__.py
+│   ├── dependency_parser.py
+│   ├── enrichment.py
+│   ├── remediation.py
+│   ├── report_generator.py
+│   ├── risk_engine.py
+│   └── vulnerability_checker.py
+├── tests/
+│   ├── test_dependency_parser.py
+│   ├── test_remediation.py
+│   └── test_risk_engine.py
+├── .github/
+│   └── workflows/
+│       └── tests.yml
+├── .streamlit/
+│   └── config.toml
+├── requirements.txt
+└── README.md
+```
 
-This prototype identifies known vulnerabilities returned by OSV for the package versions queried. It does not prove that a package is safe, detect every malicious package, analyze every package ecosystem, or replace a professional security audit. A scan with verification or parsing errors is incomplete and must not be treated as a clean bill of health.
+## Limitations and responsible use
+
+- Results depend on the records returned by external data providers at scan time.
+- A clean result means no matching known vulnerability was returned for the checked versions; it does not prove a package is secure.
+- Only supported, exactly pinned Python dependencies are assessed. Nested requirements, editable installs, direct URLs, and unsupported version constraints are reported as issues rather than assumed safe.
+- A failed lookup means the dependency was **not verified**. Review all audit issues before relying on the result.
+- EPSS is a probability estimate, not proof of exploitation. CISA KEV indicates that a CVE is known to be exploited.
+- Upgrade suggestions are based on fixed versions reported by OSV and must be reviewed and tested before deployment.
+- Do not upload secrets, credentials, private indexes, or sensitive manifest comments. Package names and versions are sent to the public data services used by the scanner.
+- This project is a decision-support tool and does not replace dependency review, software composition analysis, testing, or a professional security assessment.
+
+## Presentation
+
+For a short hackathon demo, show the included manifest, run the audit, explain why findings are ranked, demonstrate one recommended upgrade, then export the CSV and JSON report. Clearly state the prototype's limitations.
+
+## Maintainer
+
+Created as a student hackathon project. Contributions, bug reports, and improvement suggestions are welcome.
